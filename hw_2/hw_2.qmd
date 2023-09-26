@@ -1,0 +1,291 @@
+---
+title: "Stat5405 Homework 2"
+author: "Giovanni Lunetta"
+date: "September 9, 2023"
+format: html
+embed-resources: true
+theme: cosmo
+code-line-numbers: true
+number_examples: true
+number_section: true
+number_chapters: true
+linkcolor: blue
+editor: visual
+fig-cap-location: top
+---
+
+## Due: Sun. Sep. 17 2023 at 11:59 pm - submit on HuskyCT
+
+1. The PrisonStress data in the R package PairedData gives the PSS (stress measurements) for $n=26$ people at the time of their entry into a prison and at the time of exit. A few of these prison inmates were trained in a sport during their imprisonment. The groups are indicated by Sport and Control.
+```{r}
+library(ggplot2)
+library(car)
+library(PairedData)
+data(PrisonStress)
+str(PrisonStress)
+```
+
+a. Consider only the group who got sport training during their time in prison. Do the data indicate that sport training can be helpful in reducing average stress in inmates? State the null and alternative hypotheses, carry out a suitable paired procedure, and explain your conclusion. Hint: argue that you are looking at paired data.
+
+**Null Hypothesis: The average stress of inmates who got sport training does not change between the time of entry and exit.**
+
+**$H_0: \mu_{\text{entry}} = \mu_{\text{exit}}$**
+
+**Where: $\mu_{\text{entry}}$ is the average stress of inmates who got sport training during their time in prison at the time of entry. $\mu_{\text{exit}}$ is the average stress of inmates who got sport training during their time in prison at the time of exit.**
+
+**Alternative Hypothesis: The average stress of inmates who got sport training at the time of entry is greater than at the time of exit (indicating a reduction in stress).**
+
+**$H_1: \mu_{\text{entry}} > \mu_{\text{exit}}$**
+
+**Why the Data is Paired:**
+
+**The data is paired because we have two measurements (stress scores) for the same individual inmate: one at the time of entry into prison and the other at the time of exit. This pairing means that any inherent individual characteristics or variability that might affect stress scores are controlled for, since each inmate acts as their own control. Therefore, any difference between the two measurements can be attributed more confidently to the time spent in prison and the interventions (like sport training) they received, rather than other external or individual factors.**
+
+```{r}
+# Filtering the data to only include inmates who got sport training
+sport_data <- subset(PrisonStress, Group == "Sport")
+
+# Calculate the differences between paired observations
+differences <- sport_data$PSSbefore - sport_data$PSSafter
+
+# Create a Q-Q plot with confidence bands
+qqPlot(differences, main = "Q-Q Plot of Differences with Confidence Bands")
+```
+**Before conducting the paired t-test, we can check the normality assumption by plotting the differences between the paired observations (i.e., stress scores at entry and exit) on a Q-Q plot. The Q-Q plot shows that the differences are approximately normally distributed, with the points falling close to the confidence bands. This suggests that the normality assumption is met.**
+
+```{r}
+# Paired t-test
+test_result <- t.test(sport_data$PSSbefore, sport_data$PSSafter, paired = TRUE, alternative = "greater")
+
+test_result
+```
+**Results Interpretation**
+
+**Given the p-value of 0.008899, which is less than the alpha level of 0.05, we reject the null hypothesis $(H_0: \mu_{\text{entry}} = \mu_{\text{exit}})$. This suggests a statistically significant reduction in the average stress levels from entry to exit times for inmates who underwent sport training.**
+
+**The positive mean difference of 3.933333 indicates that the average stress score at entry was approximately 3.93 units higher than at exit. The 95% confidence interval for the mean difference starts from 1.352367, providing further evidence for this reduction in stress levels.**
+
+**Conclusion**
+
+**Based on the paired t-test, there is strong evidence to suggest that sport training is effective in reducing the average stress levels in inmates from their time of entry to their time of exit from prison.**
+
+b. At exit, we wish to compare the mean stress levels between the Sport and Control groups. Graphically and numerically summarize the sample information at exit time from the two groups. Hint: argue that now we are looking at two independent samples.
+
+**Why the Data is Independent:**
+
+**The two groups, Sport and Control, represent two distinct sets of inmates. One group underwent sport training while the other did not. Since there is no overlap or pairing between the individuals of these two groups, they are considered independent.**
+```{r}
+# Boxplot for the stress levels at exit for both groups
+ggplot(PrisonStress, aes(x=Group, y=PSSafter, fill=Group)) + geom_boxplot(show.legend = F)
+
+# Descriptive statistics for the stress levels at exit for both groups
+by(PrisonStress$PSSafter, PrisonStress$Group, summary)
+```
+**Interpretation:**
+
+**Based on the provided summary statistics:**
+
+**The Control group has a slightly higher mean stress level (23.73) at exit compared to the Sport group (20).**
+**The spread of data (as indicated by the interquartile range) seems wider for the Control group. The Sport group appears to have a tighter distribution, especially since their 1st quartile is 14 compared to 20.5 for the Control group.**
+**Given this data, it seems that there might be a difference between the stress levels of the two groups at the time of exit, with the Sport group showing a lower mean stress level. This aligns with the earlier observation that sport training seems beneficial in reducing stress levels. However, to establish this with statistical confidence, we would need to conduct a statistical test (as we'll explore in the subsequent sections).**
+
+c. Do the variances of the two populations appear to be the same? Verify graphically, and using a suitable statistical test.
+
+```{r}
+ggplot(PrisonStress, aes(x=Group, y=PSSafter, fill=Group)) + geom_boxplot(show.legend = F)
+```
+
+**Null Hypothesis: The variances of the PSS scores at exit time (PSSafter) between the Control and Sport groups are the same.**
+
+$H_0: \sigma_{\text{Control}}^2 = \sigma_{\text{Sport}}^2$
+
+**Where: $\sigma_{\text{Control}}^2$ is the variance of the PSS scores at exit time for the Control group. $\sigma_{\text{Sport}}^2$ is the variance of the PSS scores at exit time for the Sport group.**
+
+**Alternative Hypothesis: The variances of the PSS scores at exit time (PSSafter) between the Control and Sport groups are different.**
+
+$H_1: \sigma_{\text{Control}}^2 \neq \sigma_{\text{Sport}}^2$
+
+```{r}
+# For Control Group
+qqPlot(PrisonStress$PSSafter[PrisonStress$Group == "Control"], main="Q-Q Plot with Confidence Bands for Control Group")
+```
+
+```{r}
+# For Sport Group
+qqPlot(PrisonStress$PSSafter[PrisonStress$Group == "Sport"], main="Q-Q Plot with Confidence Bands for Sport Group")
+```
+
+**Since the normality assumption holds for both populations, we use the F-test.**
+
+```{r}
+var_test_result <- var.test(PrisonStress$PSSafter[PrisonStress$Group == "Control"], 
+                            PrisonStress$PSSafter[PrisonStress$Group == "Sport"])
+
+var_test_result
+```
+**Based on the results of the F-test, there is no significant evidence to suggest that the variances of the PSS scores at exit time (PSSafter) between the Control and Sport groups are different. Thus, for subsequent t-tests comparing the means of the two groups, it would be appropriate to consider using the pooled variance t-test (assuming other assumptions, like normality, are met).**
+
+d. Using a suitable $t$-procedure, verify whether the mean stress levels between the two groups at exit are the same.
+
+**Null Hypothesis: The average stress levels of the two groups at exit are the same.**
+
+**$H_0: \mu_{\text{Control}} = \mu_{\text{Sport}}$**
+
+**Where: $\mu_{\text{Control}}$ is the average stress level of the Control group at exit. $\mu_{\text{Sport}}$ is the average stress level of the Sport group at exit.**
+
+**Alternative Hypothesis: The average stress level of the Control group at exit is greater than that of the Sport group at exit.**
+
+**$H_1: \mu_{\text{Control}} > \mu_{\text{Sport}}$**
+
+```{r}
+result <- t.test(PSSafter ~ Group, data=PrisonStress, var.equal=TRUE)
+
+# Print the results
+print(result)
+```
+**The p-value is 0.192, which is greater than the conventional significance level of 0.05. Thus, we fail to reject the null hypothesis.**
+
+**Interpretation:**
+
+**The average stress levels of the Control and Sport groups at exit time are not statistically different. Though there might be a difference observed in the sample means (with the Control group having a mean of 23.72727 and the Sport group having a mean of 20.00000), this difference is not statistically significant given our data.**
+
+e. Compute and interpret Cohen’s d.
+
+```{r}
+library(effsize)
+
+# Extract data for Control and Sport groups
+control_data <- PrisonStress[PrisonStress$Group == "Control",]$PSSafter
+sport_data <- PrisonStress[PrisonStress$Group == "Sport",]$PSSafter
+
+# Compute Cohen's d
+result <- cohen.d(control_data, sport_data, pooled = TRUE)
+print(result)
+```
+
+**Interpretation:**
+
+**Cohen's $D$ indicated a medium effect size of approximately 0.533 in favor of the sport training group having lower stress levels. However, the 95% confidence interval for this effect size spans from -0.3005 to 1.3662, including zero, which means we're uncertain about the true magnitude of this effect in the broader population.**
+
+2. The Loblolly data in R shows the heights of $n=84$ Loblolly pine trees, along with the age and seed source for each tree. Suppose that scientists are interested in seeing whether the average heights of trees aged 20 years and 25 years are the same. Analyze the data in detail and describe your conclusion. Hint: I have not asked specific questions in parts (a), (b), etc., but your detailed analysis must reflect details similar to Question 1.
+```{r}
+data(Loblolly)
+str(Loblolly)
+```
+
+**The first thing we are going to do is state the null and alternative hypotheses.**
+
+**Null Hypothesis: The average height of Loblolly pine trees at age 20 years is the same as at age 25 years.**
+
+$H_0: \mu_{\text{20}} = \mu_{\text{25}}$
+
+**Where: $\mu_{\text{20}}$ is the average height of Loblolly pine trees at age 20 years. $\mu_{\text{25}}$ is the average height of Loblolly pine trees at age 25 years.**
+
+**Alternative Hypothesis: The average height of Loblolly pine trees at age 20 years is greater than at age 25 years.**
+
+$H_1: \mu_{\text{20}} > \mu_{\text{25}}$
+
+**Next, we want to check if the data is paired or independent.**
+
+```{r}
+table_subset <- table(Loblolly$Seed, Loblolly$age %in% c(20, 25))
+table_subset
+```
+
+**Why the Data is Paired:**
+
+**The data for the heights of the Loblolly pine trees at ages 20 and 25 is paired because each tree (indicated by its Seed value) has two height measurements: one at age 20 and another at age 25. This pairing implies that we should use methods suitable for analyzing paired data to determine if there's a significant difference in tree heights between these two ages.**
+
+**Next, we want to check if the normality assumption holds for both populations.**
+```{r}
+# Extract heights of trees aged 20 and 25 years
+height_20 <- Loblolly$height[Loblolly$age == 20]
+height_25 <- Loblolly$height[Loblolly$age == 25]
+
+par(mfrow=c(2,2))
+
+# For height_20
+hist(height_20, main = "Histogram for Height at Age 20", 
+     xlab = "", col = "grey", border = "white")
+qqPlot(height_20, main = NA, pch = 19, col = 2, cex = 0.7)
+
+# For height_25
+hist(height_25, main = "Histogram for Height at Age 25", 
+     xlab = "Height")
+qqPlot(height_25)
+
+par(mfrow=c(1,1))
+```
+
+**The Q-Q plots show that the points fall close to the confidence bands, indicating that the normality assumption is met.**
+
+**Next we want to check if the variances of the two populations appear to be the same.**
+
+**Null Hypothesis: The variances of the heights of trees at age 20 (height_20) and age 25 (height_25) are the same.**
+
+$H_0: \sigma_{20}^2 = \sigma_{25}^2$
+
+**Where: $\sigma_{20}^2$ is the variance of the heights of trees at age 20. $\sigma_{25}^2$ is the variance of the heights of trees at age 25.**
+
+**Alternative Hypothesis: The variances of the heights of trees at age 20 (height_20) and age 25 (height_25) are different.**
+
+$H_1: \sigma_{20}^2 \neq \sigma_{25}^2$
+
+**Since the normality assumption holds for both populations, we use the F-test.**
+```{r}
+var_test_result <- var.test(height_20, height_25)
+var_test_result
+```
+
+**Results Interpretation**
+
+**Given the p-value of 0.9283, which is greater than the alpha level of 0.05, we fail to reject the null hypothesis $H_0: \sigma_{20}^2 = \sigma_{25}^2$. This indicates that there is no statistically significant evidence to suggest a difference in variances between the heights of trees at age 20 (height_20) and age 25 (height_25).**
+
+**After confirming assumptions we can run a paired t-test.**
+
+```{r}
+# Run paired t-test
+paired_t_test_result <- t.test(height_20, height_25, paired = TRUE)
+paired_t_test_result
+```
+**Conclusion**
+
+**The paired t-test comparing the heights of Loblolly pine trees at ages 20 and 25 yielded a t-value of -39.127 with a p-value close to 0 (7.125e-15). This extremely low p-value indicates a statistically significant difference in the average heights between the two ages. Specifically, trees are on average about 8.82 units shorter at age 20 than at age 25, as evidenced by the mean difference of -8.820714. The 95% confidence interval for this difference ranges from -9.307744 to -8.333684, further supporting the observed difference.**
+
+**Next we want to compute and interpret Cohen's d.**
+```{r}
+# Boxplot for the heights of trees aged 20 and 25 years
+ggplot(Loblolly[Loblolly$age %in% c(20, 25), ], aes(x = as.factor(age), y = height, fill = as.factor(age))) + 
+  geom_boxplot(show.legend = F) + 
+  labs(x = "Age", y = "Height") +
+  ggtitle("Distribution of Heights for Trees Aged 20 and 25 Years")
+```
+
+```{r}
+# Calculate Cohen's d for paired data
+d <- cohen.d(height_20, height_25, paired = TRUE)
+
+# View the result
+print(d)
+```
+**Conclusion:**
+
+**The height difference between Loblolly pine trees at ages 20 and 25 is not only statistically significant but also has a very large effect size. The trees at age 25 are substantially taller than those at age 20. The magnitude of this difference is large, with a Cohen's d value of approximately -3.93, which is much larger than the standard benchmarks for effect sizes. This suggests a very pronounced difference in tree heights between the two ages.**
+
+3. Suppose you are looking at two independent samples and wish to compare the averages of the populations from which these samples are drawn. If you determine that the two-sample pooled $t$-test is suitable based on verifying the assumptions, will Wilcoxon’s rank-sum test also be suitable? Discuss why. If yes, which of these two tests would you recommend, and why?
+
+**If you are examining two independent samples and aim to compare the averages of the populations from which these samples are drawn, the choice between the two-sample pooled t-test and Wilcoxon's rank-sum test depends on the underlying assumptions. The two-sample pooled t-test assumes that the two populations the samples come from are normally distributed with equal variances. In contrast, the Wilcoxon rank-sum test does not require the assumption of normality but does assume that the two samples come from populations with the same shape, even if they differ in location or median.**
+
+**If the assumptions for the pooled t-test are met, then the data is also suitable for the Wilcoxon rank-sum test. However, the reverse isn't necessarily true; there are situations where the Wilcoxon test is appropriate, but the t-test isn't, especially when the data isn't normally distributed.**
+
+**Additionally, when the assumptions of the pooled t-test are met, it is generally more powerful than the Wilcoxon rank-sum test. This means that, given the same sample size, the t-test has a higher likelihood of detecting a true difference between groups when one exists. However, if the t-test assumptions are violated, the Wilcoxon test might offer more power in detecting differences.**
+
+4. Select and read any valid writeup (article or blog) about the p-value controversy and p-value interpretation. Write a short report (one to two paragraphs) about your take-away on this topic as an emerging data scientist.
+
+
+**Wellek, Stefan. “A Critical Evaluation of the Current ‘p‐value Controversy.’” Biometrical Journal, vol. 59, no. 5, 2017, pp. 854–72, https://doi.org/10.1002/bimj.201700001.**
+
+**The p-value, a fundamental metric in statistical hypothesis testing, has recently been at the center of significant debate due to its potential for misinterpretation in scientific research. The American Statistical Association (ASA) highlighted this concern in 2016, suggesting that an overemphasis on p-values might be contributing to a reproducibility crisis in science. While medical research, governed by strict regulatory rules, seems somewhat insulated from these pitfalls, the article underscores that misconceptions persist. For instance, many mistakenly equate a p-value with the probability that a studied hypothesis is true or that data arose from mere chance.**
+
+**For emerging data scientists, this controversy underscores the importance of a holistic approach to statistical inference. While p-values provide valuable insights, they should be viewed as part of a broader analytical toolkit. Sole reliance on them can lead to oversimplified conclusions. As data science evolves, understanding the nuances and limitations of tools like the p-value is crucial for producing robust and reliable results**
+

@@ -1,0 +1,260 @@
+---
+title: "Stat5405 Homework 1"
+author: "Giovanni Lunetta"
+date: "September 8, 2023"
+format: html
+embed-resources: true
+theme: cosmo
+code-line-numbers: true
+number_examples: true
+number_section: true
+number_chapters: true
+linkcolor: blue
+editor: visual
+fig-cap-location: top
+---
+
+## Due: Sun. Sep. 10 2023 at 11:59 pm - submit on HuskyCT
+
+1. Use the trees data in the R package datasets. Explain what you see when you use the boxplot() function in the following ways:
+```{r}
+data(trees)
+str(trees)
+```
+
+a. boxplot(Volume, varwidth = TRUE)
+```{r}
+boxplot(trees$Volume, varwidth = TRUE)
+```
+**This boxplot shows us the distribution of the Volume of the trees in the dataset. We see that Volume is heavily skewed to the right with an outlier above 70. We see that the median sits around 25. We can estimate that the IQR is about 18 from Q1(20) and Q3 (38). Overall, most of the trees have a volume between 20 and 38.**
+
+b. boxplot(Girth, notch = TRUE)
+```{r}
+boxplot(trees$Girth, notch = TRUE)
+```
+**This boxplot shows us the distribution of the Girth of the trees in the dataset. We see that Volume is skewed to the right. We see that the median sits around 13. We can estimate that the IQR is about 4 from Q1(15) and Q3 (11). Overall, most of the trees have a volume between 11 and 15. We can also look at the notches and claim that the median of the population has been accurately estimated by the median of this sample.**
+
+2. Use the trees data in the R package datasets.
+
+a. Use the gglot2 package to construct a boxplot of Volume, in black with a horizontal orientation rather than the default vertical gray boxplot.
+```{r}
+library(ggplot2)
+
+ggplot(trees, aes(x=1, y=Volume)) +
+  geom_boxplot(color="black") +
+  coord_flip()
+```
+
+b. Discuss whether you can assume that Volume follows a normal distribution, and if not, in what way(s) the data departs from normality. Use the normal Q-Q plot, as well as the Shapiro-Wilk and chi-square goodness of fit tests for normality.
+
+**The boxplot shows us that the data is not normally distributed. We see that the data is skewed to the right.**
+
+```{r}
+library(car)
+
+# QQ plot with confidence bands
+qqPlot(trees$Volume, main="QQ Plot with Confidence Envelope", 
+       ylab="Volume", cex=0.6, pch=19, col="red", col.lines="orange")
+
+```
+**The qqplot shows us that the data is not normally distributed. We see that the data is skewed to the right. We also see that there are multiple points that lie outside of the confidence bands.**
+
+```{r}
+shapiro.test(trees$Volume)
+```
+**The Shapiro-Wilk test shows us that the data is not normally distributed. We see that the p-value is less than 0.05.**
+
+```{r}
+library(nortest)
+
+pearson.test(trees$Volume)
+```
+**The chi-square test shows us that the data is not normally distributed. We see that the p-value is less than 0.05.**
+
+```{r}
+qqPlot(log(trees$Volume), main="QQ Plot with Confidence Envelope", 
+       ylab="Volume", cex=0.6, pch=19, col="red", col.lines="orange")
+
+shap <- shapiro.test(log(trees$Volume))
+print(shap)
+
+chi <- pearson.test(log(trees$Volume))
+print(chi)
+```
+**It is important to mention though, when we take the log of our data, it does follow a normal distrbution. We see this from the QQ-plot and also both statistical tests are not significant at alpha=0.05.**
+
+3. Use the mtcars data from the R package datasets.
+```{r}
+data(mtcars)
+str(mtcars)
+```
+
+a. Create a matrix scatterplot for the variables in the mtcars data. With which variables is mpg highly associated?
+```{r}
+pairs(mtcars)
+```
+**We see that mpg is highly associated with cyl, disp, hp, drat, and wt.**
+
+b. Which pair of variables in the mtcars data has the highest correlation? (Hint: use the cor() function. )
+```{r}
+# Compute the correlation matrix
+cor_matrix <- cor(mtcars)
+cor_matrix
+```
+```{r}
+# Set the diagonal and upper triangle to NA
+cor_matrix[lower.tri(cor_matrix, diag = TRUE)] <- NA
+
+# Find the location of the maximum absolute correlation
+loc_max <- which(abs(cor_matrix) == max(abs(cor_matrix), na.rm = TRUE), arr.ind = TRUE)
+
+# Extract the variable names for the maximum correlation
+var1 <- rownames(cor_matrix)[loc_max[1, 1]]
+var2 <- colnames(cor_matrix)[loc_max[1, 2]]
+
+# Extract the maximum correlation value
+max_cor <- cor_matrix[loc_max[1, 1], loc_max[1, 2]]
+
+list(variable1 = var1, variable2 = var2, correlation = max_cor)
+```
+**We see that the pair of variables cyl and disp has the highest correlation.**
+
+4. Download historical weather data for Indian cities from kaggle. Create your own interesting visualization(s) and discuss.
+```{r}
+bangalore <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/Bangalore_1990_2022_BangaloreCity.csv")
+chennai <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/Chennai_1990_2022_Madras.csv")
+delhi <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/Delhi_NCR_1990_2022_Safdarjung.csv")
+lucknow <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/Lucknow_1990_2022.csv")
+mumbai <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/Bangalore_1990_2022_BangaloreCity.csv")
+rajasthan <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/Rajasthan_1990_2022_Jodhpur.csv")
+station <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/Station_GeoLocation_Longitute_Latitude_Elevation_EPSG_4326.csv")
+bhubhneshwar <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/weather_Bhubhneshwar_1990_2022.csv")
+rourkela <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_1/Temperature_And_Precipitation_Cities_IN/weather_Rourkela_2021_2022.csv")
+```
+```{r}
+# Add a city column to each dataset
+bangalore$city <- "Bangalore"
+chennai$city <- "Chennai"
+delhi$city <- "Delhi"
+lucknow$city <- "Lucknow"
+mumbai$city <- "Mumbai"
+rajasthan$city <- "Rajasthan"
+
+# Combine all datasets
+df <- rbind(bangalore, chennai, delhi, lucknow, mumbai, rajasthan)
+
+str(df)
+
+# Compute year for the entire dataframe
+df$year <- as.numeric(format(as.Date(df$time, format="%d-%m-%Y"), "%Y"))
+```
+```{r}
+# Compute yearly average temperature for all cities
+yearly_avg_all <- aggregate(tavg ~ year + city, data=df, mean, na.rm=TRUE)
+
+# Identify hottest and coldest years for each city
+hottest_years <- numeric()
+coldest_years <- numeric()
+
+cities <- unique(yearly_avg_all$city)
+for (city in cities) {
+  city_data <- subset(yearly_avg_all, city == city)
+  hottest_years <- c(hottest_years, city_data$year[which.max(city_data$tavg)])
+  coldest_years <- c(coldest_years, city_data$year[which.min(city_data$tavg)])
+}
+
+# Create bar plot and highlight the hottest and coldest years using facet_grid
+ggplot(yearly_avg_all, aes(x=factor(year), y=tavg, fill=(year %in% c(hottest_years, coldest_years)))) + 
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=c("grey", "red"), guide=FALSE) +
+  labs(title="Yearly Average Temperatures", x="Year", y="Average Temperature (°C)") +
+  facet_grid(city ~ .) +
+  theme_minimal()
+```
+**We see that the hottest years for each city is 2019. We see that the coldest years for each city are 1992.**
+
+```{r}
+# Histogram of Rainfall Distribution
+ggplot(df, aes(x=prcp)) + 
+  geom_histogram(binwidth=5, fill="skyblue", color="black", alpha=0.7) + 
+  labs(title="Rainfall Distribution across Cities", x="Rainfall (mm)", y="Frequency") +
+  facet_wrap(~city) +
+  theme_minimal()
+```
+**We see that the rainfall distribution is skewed to the right. We see that the majority of the cities have a rainfall between 0 and 50 mm.**
+
+```{r}
+ggplot(df, aes(x = city, y = tavg, fill = city)) + 
+geom_boxplot() + 
+labs(title = "Distribution of Average Temperatures by City", x = "City", y = "Average Temperature (°C)")
+```
+```{r}
+# Create a function to generate sample QQ data for a given city against a reference
+get_qq_data <- function(city_data, ref_data) {
+  qq_data <- data.frame(sample_quantiles = quantile(city_data, probs = seq(0, 1, by = 0.01), na.rm = TRUE),
+                        ref_quantiles = quantile(ref_data, probs = seq(0, 1, by = 0.01), na.rm = TRUE))
+  return(qq_data)
+}
+
+# Let's choose Delhi as the reference city
+ref_data <- df$tavg[df$city == "Delhi"]
+
+# Create a data frame to store QQ data for all cities
+all_qq_data <- data.frame()
+
+for (city in unique(df$city)) {
+  city_data <- df$tavg[df$city == city]
+  qq_data <- get_qq_data(city_data, ref_data)
+  qq_data$city <- city
+  all_qq_data <- rbind(all_qq_data, qq_data)
+}
+
+# Plot using ggplot
+ggplot(all_qq_data, aes(x = ref_quantiles, y = sample_quantiles)) +
+  geom_point(aes(color = city), alpha = 0.5, size = 1) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  facet_wrap(~ city, scales = "free") +
+  labs(title = "QQ Plots: Comparison to Delhi's Temperature Distribution",
+       x = "Delhi's Quantiles",
+       y = "City's Quantiles") +
+  theme_minimal()
+```
+**As we can see, the distribvution Bangalore, Mumbai and Rajasthan are very similiar. Also, Delhi and Lucknow are very similiar. This can be confirmed by looking at a QQ plot where Delhi is the reference city.**
+
+5. Find and discuss an example of unethical data visualization.
+```{r}
+# Filter data for years between 2010 and 2015, for Delhi and Lucknow, and remove NA values in tavg column
+selected_data <- df[df$year >= 2010 & df$year <= 2015 & !is.na(df$tavg) & (df$city %in% c("Delhi", "Lucknow")),]
+
+# Compute yearly average temperature for all cities
+yearly_avg <- aggregate(tavg ~ year + city, data=selected_data, mean, na.rm=TRUE)
+
+# Plot with an exaggerated y-axis
+p <- ggplot(yearly_avg, aes(x=factor(year), y=tavg, color=city, group=city)) + 
+  geom_line(size=1.5) + 
+  geom_point(size=4) +
+  scale_y_continuous(limits=c(24, 26.5), breaks = seq(24, 26.5, by = 0.25)) + # This restricts the y-axis
+  labs(title="DRAMATIC CHANGES! Yearly Average Temperatures (2010-2015)", 
+       x="Year", 
+       y="Average Temperature (°C)") +
+  theme_minimal() +
+  theme(legend.position="bottom", 
+        legend.title=element_blank())
+
+print(p)
+```
+**Graph Description:**
+
+**This graph displays the yearly average temperatures for Delhi and Lucknow between the years 2010 and 2015. It uses lines and points to depict the temperature trends over the years for these two cities.**
+
+**Why it's Unethical:**
+
+**Y-Axis Manipulation: The y-axis range from 24°C to 26.5°C exaggerates temperature differences, making them seem more dramatic than they might be.**
+
+**Selective Data: Only data from Delhi and Lucknow from 2010 to 2015 is shown, potentially omitting broader trends.**
+
+**Misleading Title: The title, “DRAMATIC CHANGES! Yearly Average Temperatures (2010-2015)”, uses emotive language without providing context on typical fluctuations.**
+
+**No Error Indication: There are no error bars or confidence intervals to show data variability.**
+
+**Ethical data visualization should be transparent and honest. This graph, however, might mislead viewers with its presentation, potentially causing misconceptions.**

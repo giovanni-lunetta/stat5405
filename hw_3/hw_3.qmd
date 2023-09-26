@@ -1,0 +1,295 @@
+---
+title: "Stat5405 Homework 3"
+author: "Giovanni Lunetta"
+date: "September 21, 2023"
+format: html
+embed-resources: true
+theme: cosmo
+code-line-numbers: true
+number_examples: true
+number_section: true
+number_chapters: true
+linkcolor: blue
+editor: visual
+fig-cap-location: top
+---
+
+## Due: Sun. Sep. 24 2023 at 11:59 pm - submit on HuskyCT
+
+1. This is an exercise to learn to pull critical values from the normal, t, chi-squared and F-distributions using suitable R functions.
+
+a. Find the z-score, $z_{0.025}$, i.e., the value of the $N(0,1)$ variable $Z$ such that the area under the curve below $z_{0.025}$ is 0.025.
+```{r}
+z_0_025 <- qnorm(0.025)
+
+z_0_025
+```
+
+b. Find $z_{0.975}$.
+```{r}
+z_0_975 <- qnorm(0.975)
+
+z_0_975
+```
+
+c. Find the critical value you will use for constructing a 95% C.I. for $\mu_1 - \mu_2$ based on two independent samples of sizes $n_1 = 11$ and $n_2 = 13$ drawn from two normal populations with equal variances.
+```{r}
+# Since they are independent samples with equal variances, we pool the variances and use the t-distribution.
+# Degrees of freedom = n1 + n2 - 2 = 11 + 13 - 2 = 22
+t_critical <- qt(0.975, df=22)
+
+t_critical
+```
+
+d. Find the value of chi squared corresponding to $1 - \alpha = 0.95$ when the d.f. is 17.
+```{r}
+chi_squared <- qchisq(0.95, df=17)
+
+chi_squared
+```
+
+e. Find the $F$-value corresponding to $1-\alpha = 0.95$ when the numerator d.f. is 4, and the denominator d.f. is 18.
+```{r}
+f_value <- qf(0.95, df1=4, df2=18)
+
+f_value
+```
+
+2. Consider the Arthritis data from the R package vcd. Combine the levels Some and Marked in the Improvement status, to produce a 2×2 table, which has two response levels, None and Improved.
+```{r}
+library(vcd)
+data(Arthritis)
+
+# Combine 'Some' and 'Marked' levels
+Arthritis$Improved <- ifelse(Arthritis$Improved %in% c("Some", "Marked"), "Improved", "None")
+```
+
+a. Cross-tabulate the number of patients by the variables treatment and improvement in the resulting 2×2 table, showing row and column sums.
+```{r}
+(A.table <- xtabs( ~ Treatment + Improved, data = Arthritis))
+```
+The cross-tabulation of the number of patients by the variables 'Treatment' and 'Improved' shows that:
+- In the 'Placebo' group, 14 patients showed improvement, while 29 did not.
+- In the 'Treated' group, 28 patients showed improvement, while 13 did not.
+
+```{r}
+# Frequency table for Improved
+(I.table <- table(Arthritis$Improved))
+
+# Proportions
+prop.table(I.table)
+
+# Percentages
+prop.table(I.table) * 100
+
+mosaicplot(A.table, color = c("gray", "lightgreen"), main = "Mosaic plot for the modified arthritis data")
+```
+b. Let $\pi_{1|1}$ and $\pi_{1|2}$ respectively denote the true proportions of Improved patients in the Treated and Placebo groups respectively. Compute and interpret the sample estimates of $\pi_{1|1}$ and $\pi_{1|2}$.
+```{r}
+# Proportion of Improved patients in the Treated group
+pi_1_1 = A.table["Treated", "Improved"] / sum(A.table["Treated", ])
+
+# Proportion of Improved patients in the Placebo group
+pi_1_2 = A.table["Placebo", "Improved"] / sum(A.table["Placebo", ])
+
+pi_1_1
+pi_1_2
+```
+The proportion $\pi_{1|1}$ (proportion of Improved patients in the 'Treated' group) is approximately 0.683. This means that about 68.3% of the patients who received the treatment showed improvement.
+The proportion $\pi_{1|2}$ (proportion of Improved patients in the 'Placebo' group) is approximately 0.326. This indicates that only about 32.6% of the patients who received the placebo showed improvement.
+These proportions suggest that a higher proportion of patients showed improvement in the 'Treated' group compared to the 'Placebo' group. The significant difference between these two proportions strongly suggests that the treatment is more effective than the placebo in improving the condition of the patients.
+
+c. Obtain a 95% C.I. estimate of $\pi_{1|1} - \pi_{1|2}$. How can this interval help you decide whether the true proportions are equal?
+```{r}
+test <- prop.test(c(A.table["Treated", "Improved"], A.table["Placebo", "Improved"]), 
+                  c(sum(A.table["Treated",]), sum(A.table["Placebo",])))
+test$conf.int
+```
+The 95% confidence interval for the difference in proportions $\pi_{1|1} - \pi_{1|2}$ is (0.1338, 0.5809). This interval represents the range in which we are 95% confident that the true difference between the proportions of improved patients in the 'Treated' and 'Placebo' groups lies.
+
+Since the interval does not contain zero, it suggests that the two proportions are not equal. In other words, there is a statistically significant difference between the proportion of improved patients in the 'Treated' group compared to the 'Placebo' group. This confidence interval helps support the conclusion that the treatment is indeed effective, as the true proportions of improved patients between the two groups are likely different.
+
+d. Carry out a two-sided hypothesis test $H_0: \pi_{1|1} = \pi_{1|2}$ at the 5% level of significance. Interpret the decision, and relate it to your result from (c).
+
+Null Hypothesis: The true proportions of improved patients in the 'Treated' and 'Placebo' groups are equal.
+
+$H_0: \pi_{1|1} = \pi_{1|2}$
+
+Alternative Hypothesis: The true proportions of improved patients in the 'Treated' and 'Placebo' groups are not equal.
+
+$H_a: \pi_{1|1} \neq \pi_{1|2}$
+```{r}
+test <- prop.test(c(A.table["Treated", "Improved"], A.table["Placebo", "Improved"]), 
+                  c(sum(A.table["Treated",]), sum(A.table["Placebo",])))
+test
+```
+The p-value for the two-sided hypothesis test $H_0: \pi_{1|1} = \pi_{1|2}$ is approximately 0.00224. Since this p-value is less than the 5% significance level, we reject the null hypothesis. This suggests that there is sufficient evidence to conclude that the true proportions of improved patients in the 'Treated' and 'Placebo' groups are different. This result is consistent with the conclusion drawn from the confidence interval in part (c).
+
+3. Consider the Arthritis data from the R package `vcd`. As you did in Q2, combine the levels `Some` and `Marked` in the `Improvement` status, to produce a 2×2 table, which has two response levels, `None` and `Improved`.
+```{r}
+# Load necessary libraries
+library(vcd)
+library(epitools)
+
+data(Arthritis)
+```
+
+a. Compute and interpret $\omega^1$ and $\omega^2$ where `Yes` corresponds to `Improved` status.
+```{r}
+# Combine 'Some' and 'Marked' levels
+Arthritis$Improved <- ifelse(Arthritis$Improved %in% c("Some", "Marked"), "Improved", "None")
+table_data <- table(Arthritis$Treatment, Arthritis$Improved)
+
+omega1 <- table_data["Treated", "Improved"] / table_data["Treated", "None"]
+omega2 <- table_data["Placebo", "Improved"] / table_data["Placebo", "None"]
+print(paste("Omega1 (Treated group):", omega1))
+print(paste("Omega2 (Placebo group):", omega2))
+```
+Answer:
+From the output:
+
+- Omega1 (Treated group): 2.15384615384615
+- Omega2 (Placebo group): 0.482758620689655
+
+Intepretation:
+
+- $\omega^1$ (For the Treated group): The odds of an individual in the Treated group showing improvement (as opposed to not showing improvement) are approximately 2.15 to 1. This suggests that patients in the Treated group are more than twice as likely to experience improvement than not.
+  
+- $\omega^2$ (For the Placebo group): The odds of an individual in the Placebo group showing improvement (compared to not showing improvement) are approximately 0.48 to 1. This indicates that patients in the Placebo group are less likely to experience improvement compared to not showing any improvement.
+
+b. Obtain and interpret the sample odds ratio. Hint: look at the R package `epitools`.
+
+Null Hypothesis: The odds of improvement are the same for the Treated and Placebo groups.
+
+$H_0: \omega^1 = \omega^2$
+
+Alternative Hypothesis: The odds of improvement are different for the Treated and Placebo groups.
+
+$H_a: \omega^1 \neq \omega^2$
+```{r}
+odds_ratio_data <- oddsratio(table_data)
+print(odds_ratio_data$measure)
+```
+Interpretation:
+The odds ratio of 0.2299601 (or approximately 0.23) indicates that the odds of improvement for the Treated group are 23% of the odds of improvement for the Placebo group. However, this means that the odds of improvement in the Treated group are actually about 4.35 times higher than in the Placebo group (since the reciprocal of 0.23 is approximately 4.35).
+
+The 95% confidence interval for this odds ratio ranges from about 0.089 to 0.567. Because this interval does not encompass 1, it suggests a statistically significant difference in the odds of improvement between the two groups. The odds ratio being less than 1 indicates that the treatment is significantly more effective than the placebo in terms of improvement.
+
+4. Consider the dataset tensile from the R package ACSWR.
+```{r}
+# Load the necessary library
+library(BSDA)
+library(ACSWR)
+library(car)
+library(gridExtra)
+library(ggplot2)
+```
+```{r}
+# Load the dataset
+data(tensile)
+str(tensile)
+```
+
+a. Verify graphically whether the levels of CWP have an effect on tensile strength.
+```{r}
+# Create boxplots by CWP levels using ggplot
+ggplot(tensile, aes(x=as.factor(CWP), y=Tensile_Strength, fill=as.factor(CWP))) + 
+    geom_boxplot(show.legend = FALSE) +
+    labs(x="CWP Levels", y="Tensile Strength") +
+    theme_minimal() +
+    ggtitle("Boxplots of Tensile Strength by CWP Levels")
+```
+```{r}
+summary(tensile$Tensile_Strength)
+aggregate(Tensile_Strength ~ CWP, data=tensile, summary)
+```
+The boxplots and descriptive statistics indicate that there does not seem to be a drastic difference between the variablility of tensile strength across the five levels of CWP.
+
+b. Use Bartlett’s test and Levene’s test to verify equality of variances of the five populations. In what way are these two tests different? Do they corroborate what side-by-side boxplots tell you?
+
+Null hypothesis: The variances of the five populations are equal.
+
+$H_0: \sigma_1^2 = \sigma_2^2 = \sigma_3^2 = \sigma_4^2 = \sigma_5^2$
+
+where $\sigma_i^2$ is the variance of the $i$th population.
+
+Alternative hypothesis: The variances of the five populations are not equal.
+
+$H_a: \sigma_i^2 \neq \sigma_j^2$ for at least one pair $(i, j)$
+```{r}
+# Bartlett's test
+bartlett_result <- bartlett.test(Tensile_Strength ~ CWP, data=tensile)
+
+print(bartlett_result)
+```
+```{r}
+library(lawstat)
+
+levene_result_lawstat <- levene.test(tensile$Tensile_Strength, factor(tensile$CWP))
+
+print(levene_result_lawstat)
+```
+Bartlett's test and Levene's test are both tests of homogeneity of variances. While Bartlett's test assumes that the data is normally distributed, Levene's test is more robust against deviations from normality. In this dataset, both tests yielded high p-values, suggesting that the assumption of equal variances across groups is reasonable.
+
+Yes, the results of these tests corroborate what the side-by-side boxplots tell us. The boxplots show that the variability in tensile strength is similar across the five levels of CWP. The high p-values from Bartlett's test and Levene's test suggest that the assumption of equal variances across groups is reasonable. Therefore, we can conclude that the variability in tensile strength is similar across the five levels of CWP.
+
+c. Write out the null and alternative hypotheses to test whether the mean tensile strengths are the same for each level of CWP.
+
+Null hypothesis: The mean tensile strengths are the same for each level of CWP.
+
+$H_0: \mu_1 = \mu_2 = \mu_3 = \mu_4 = \mu_5$
+
+where $\mu_i$ is the mean tensile strength for the $i$th level of CWP.
+
+Alternative hypothesis: The mean tensile strengths are not the same for each level of CWP.
+
+$H_a: \mu_i \neq \mu_j$ for at least one pair $(i, j)$
+
+d. Fit a one-factor ANOVA model to explain tensile strength as a function of the levels of CWP Use the $F$-test to verify whether there is a difference between the levels of CWP on mean tensile strength.
+
+```{r}
+anova_model <- aov(Tensile_Strength ~ factor(CWP), data=tensile)
+summary(anova_model)
+```
+Given the very small p-value (9.13e-06), we reject the null hypothesis. This means there's significant evidence to suggest that the mean tensile strengths differ across at least two levels of CWP. In simpler terms, the levels of CWP have a significant effect on tensile strength.
+
+
+e. Discuss normality of the residuals from the model in (c) graphically and using a significance test.
+
+```{r}
+library(car)
+aovfits <- fitted(anova_model)
+aovres <- residuals(anova_model)
+car::qqPlot(aovres, main = "Q-Q Plot of Residuals", pch = 19, col = 2, cex = 0.7)
+```
+```{r}
+shapiro.test(aovres)
+```
+The test produced a p-value of 0.1818, which is greater than the common 0.05 significance threshold. Thus, we don't have enough evidence to reject the assumption of normality for the residuals. This suggests that the distribution of the residuals is consistent with a normal distribution, further validating our ANOVA results.
+
+5. Using an example, describe what we mean by cherry-picking in statistical analysis, and in what ways this can be unethical practice.
+
+Definition:
+
+Cherry-picking in statistical analysis refers to the practice of selecting and presenting only specific data or results that support a particular conclusion or viewpoint while ignoring or discarding data that might contradict or weaken that conclusion.
+
+Example:
+
+Imagine a pharmaceutical company conducting multiple clinical trials for a new drug. Out of ten trials, eight showed that the drug had no significant effect compared to a placebo, but two trials indicated a slight benefit. If the company only publicizes the results from the two favorable trials and ignores or suppresses the findings from the other eight, they are cherry-picking data.
+
+Ethical Concerns:
+
+Misrepresentation: Cherry-picking misrepresents the overall evidence. By showcasing only favorable results and neglecting unfavorable or neutral outcomes, it provides a skewed view of reality.
+
+False Confidence: By focusing solely on positive outcomes, individuals or entities can instill a false sense of confidence in their audience, leading them to make decisions based on incomplete or biased information.
+
+Potential Harm: Especially in fields like medicine, cherry-picking results can lead to harmful consequences. If only positive trial results for a drug are highlighted, patients might use a medication that, in reality, is ineffective or even harmful.
+
+Undermines Trust: Cherry-picking erodes trust in research and the scientific process. When stakeholders or the general public learn that only selective data was presented, it can lead to skepticism about the integrity of the entire research community.
+
+Compromises Decision Making: Decisions based on cherry-picked data are not truly informed decisions. Whether in policy-making, business, or personal health, relying on selectively presented data can lead to suboptimal or even detrimental outcomes.
+
+In conclusion, cherry-picking is an unethical practice in statistical analysis because it presents a biased view of the data, potentially leading to incorrect conclusions, misguided actions, and a loss of trust in research findings.
+
+
+

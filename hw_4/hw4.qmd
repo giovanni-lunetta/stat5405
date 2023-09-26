@@ -1,0 +1,676 @@
+---
+title: "Stat5405 Homework 4"
+author: "Giovanni Lunetta"
+date: "September 25, 2023"
+format: html
+embed-resources: true
+theme: cosmo
+code-line-numbers: true
+number_examples: true
+number_section: true
+number_chapters: true
+linkcolor: blue
+editor: visual
+fig-cap-location: top
+---
+
+## Due: Sun. Oct. 1 2023 at 11:59 pm - submit on HuskyCT
+
+### NOTE THAT FOR ALL TESTS OF SIGNFICANCE $\alpha = 0.05$ UNLESS OTHERWISE STATED.
+
+**Q1. (5 points).** 
+Interpret this statement in your own words using a criterion you have studied: 
+*The one-factor ANOVA $F$-stat is very small, so that the chance of getting an $F$-statistic value which is as small or smaller than the $F$-stat obtained from the observed data is only $0.00004$.*
+
+Interpretation:
+
+The small value of the one-factor ANOVA F-statistic suggests that there is little variability between the group means compared to the variability within the groups. The probability of obtaining an F-statistic as small or smaller than the observed one is extremely low (0.00004), indicating that the null hypothesis (that all group means are equal) is very likely to be false.
+
+**Q2. (45 points).**
+Consider the dataset tensile from the R package *ACSWR*. You looked at the one-factor ANOVA $F$-test in HW3. Now, use suitable R functions to answer these questions.
+```{r}
+library(ACSWR)
+data(tensile)
+str(tensile)
+```
+
+(a) 
+Obtain solutions of the effects of the levels of ***CWP*** in the one-factor ANOVA model you fit for the response.
+
+Null Hypothesis: The mean tensile strength is the same for all levels of CWP.
+
+$H_0$: $\mu_1 = \mu_2 = \mu_3 = \mu_4 = \mu_5$
+
+where $\mu_i$ is the mean tensile strength for level $i$ of CWP.
+
+Alternative Hypothesis: The mean tensile strength is different for at least one level of CWP.
+
+$H_a$: $\mu_i \neq \mu_j$ for at least one pair of levels $i$ and $j$ of CWP.
+
+$\alpha = 0.05$
+
+Assumptions (WILL BE VALIDATED AFTER RUNNING ANOVA MODEL):
+
+Normality:
+
+We assume that the tensile strength for each level of CWP is normally distributed.
+
+Independence:
+
+We assume that the tensile strength for each level of CWP is independent of the tensile strength for the other levels of CWP.
+
+Equal Variance:
+
+```{r}
+library(gridExtra)
+library(ggplot2)
+
+# Create boxplots by CWP levels using ggplot
+ggplot(tensile, aes(x=as.factor(CWP), y=Tensile_Strength, fill=as.factor(CWP))) + 
+    geom_boxplot(show.legend = FALSE) +
+    labs(x="CWP Levels", y="Tensile Strength") +
+    theme_minimal() +
+    ggtitle("Boxplots of Tensile Strength by CWP Levels")
+```
+We assume that the variance of the tensile strength for each level of CWP is equal.
+
+```{r}
+# Fit a one-factor ANOVA model
+anova_model <- aov(Tensile_Strength ~ as.factor(CWP), data = tensile)
+summary(anova_model)
+```
+
+Validate Assumptions:
+
+Normality:
+
+Null Hypothesis: The residuals $e_{ij}$ are normally distributed.
+
+$H_0$: $e_{ij} \sim N(0, \sigma^2)$
+
+where $e_{ij}$ is the residual for the $j$th observation in the $i$th level of CWP.
+
+Alternative Hypothesis: The residuals $e_{ij}$ are not normally distributed.
+
+$H_a$: $e_{ij} \nsim N(0, \sigma^2)$
+
+```{r}
+library(car)
+aovfits <- fitted(anova_model)
+aovres <- residuals(anova_model)
+car::qqPlot(aovres, main = "Q-Q Plot of Residuals", pch = 19, col = 2, cex = 0.7)
+```
+```{r}
+shapiro.test(aovres)
+```
+The large $p$-value (much greater than 0.05) from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
+
+Equal Variance:
+
+Null Hypothesis: The variance of the tensile strength for each level of CWP is equal.
+
+$H_0$: $\sigma_1^2 = \sigma_2^2 = \sigma_3^2 = \sigma_4^2 = \sigma_5^2$
+
+where $\sigma_i^2$ is the variance of the tensile strength for level $i$ of CWP.
+
+Alternative Hypothesis: The variance of the tensile strength for each level of CWP is not equal.
+
+$H_a$: $\sigma_i^2 \neq \sigma_j^2$ for at least one pair of levels $i$ and $j$ of CWP.
+
+```{r}
+library(lawstat)
+
+levene_result_lawstat <- levene.test(tensile$Tensile_Strength, factor(tensile$CWP))
+
+print(levene_result_lawstat)
+```
+The large $p$-value (much greater than 0.05) from the Levene significance test for equal variance validates the equal variance assumption.
+
+```{r}
+# Obtain the effects of the levels of CWP
+effects(anova_model)
+```
+
+Interpretation of Results:
+
+The output table shows the effects of the levels of CWP. The first row shows the effect of the first level of CWP (15), the second row shows the effect of the second level of CWP (20), and so on. The last row shows the effect of the fifth level of CWP (35). The effects are the differences between the mean tensile strength for each level of CWP and the overall mean tensile strength. The overall mean tensile strength is 5.5. The effects are 0.5, 0.5, 1.5, 2.5, and 1.5 for the first, second, third, fourth, and fifth levels of CWP, respectively. This means that the mean tensile strength for the first level of CWP (15) is 0.5 higher than the overall mean tensile strength, the mean tensile strength for the second level of CWP (20) is 0.5 higher than the overall mean tensile strength, and so on. The effect of the third level of CWP (25) is 1.5 higher than the overall mean tensile strength, and the effect of the fourth level of CWP (30) is 2.5 higher than the overall mean tensile strength. The effect of the fifth level of CWP (35) is 1.5 higher than the overall mean tensile strength. This suggests that the mean tensile strength increases as the level of CWP increases from 15 to 30, and then decreases as the level of CWP increases from 30 to 35.
+
+(b) 
+Obtain point estimates, and 95\% C.I. estimates of the true means $\mu_i$ of the five groups.
+```{r}
+# Create a new data frame with the unique levels of CWP
+pred_CWP <- data.frame(CWP=unique(tensile$CWP))
+
+# Obtain the least square means, standard errors, and confidence intervals
+lsmeans <- predict(anova_model, newdata=pred_CWP, se=TRUE, interval="confidence")
+
+# Combine the results with the levels of CWP
+results <- cbind(pred_CWP, lsmeans$fit)
+
+# Print the results
+print(results)
+```
+
+(c) 
+Use the Bonferroni multiple comparison procedures to conduct pairwise tests of equality of the group means. Interpret the results.
+
+Null Hypothesis: The mean tensile strength is the same for all levels of CWP.
+
+$H_0$: $\mu_1 = \mu_2 = \mu_3 = \mu_4 = \mu_5$
+
+where $\mu_i$ is the mean tensile strength for level $i$ of CWP.
+
+Alternative Hypothesis: The mean tensile strength is different for at least one level of CWP.
+
+$H_1$: $\mu_i \neq \mu_j$ for at least one pair of levels $i$ and $j$ of CWP.
+
+```{r}
+# Conduct pairwise t-tests with Bonferroni adjustment
+pairwise_results <- pairwise.t.test(tensile$Tensile_Strength, tensile$CWP, p.adjust.method = "bonferroni")
+print(pairwise_results)
+```
+
+Interpretation of Results:
+
+The output table shows the Bonferroni adjusted $p$-value for comparing each pair. Thus, 15 and 25, 15 and 30, 20 and 35, 25 and 35 and 30 and 35 are significantly different, while the rest are not.
+
+(d)
+Use the Tukey multiple comparison procedures to conduct pairwise tests of equality of the group means. Interpret the results.
+
+Null Hypothesis: The mean tensile strength is the same for all levels of CWP.
+
+$H_0$: $\mu_1 = \mu_2 = \mu_3 = \mu_4 = \mu_5$
+
+where $\mu_i$ is the mean tensile strength for level $i$ of CWP.
+
+Alternative Hypothesis: The mean tensile strength is different for at least one level of CWP.
+
+$H_1$: $\mu_i \neq \mu_j$ for at least one pair of levels $i$ and $j$ of CWP.
+```{r}
+# Conduct Tukey's Honest Significant Difference test
+tukey_results <- TukeyHSD(anova_model, "as.factor(CWP)")
+print(tukey_results)
+```
+Interpretation of Results:
+
+Based on the TukeyHSD results and at a 5% significance level, we can interpret the results as follows:
+
+The comparisons between levels 15 and 20, 15 and 25, 15 and 30, 25 and 35, and 30 and 35 are significant after accounting for multiple testing, as their adjusted p-values are less than 0.05. This implies that there are significant differences in the means of Tensile Strength between these pairs of CWP levels.
+
+However, the comparisons between levels 20 and 25, 20 and 30, 20 and 35, 25 and 30, and 15 and 35 are not significant at the 5% level after accounting for multiple testing, as their adjusted p-values are greater than 0.05. This means there is insufficient evidence to conclude that there are significant differences in the means of Tensile Strength between these pairs of CWP levels.
+
+(e) Compute and interpret a suitable effect size to see whether the levels of ***CWP*** have a practically meaningful effect on tensile strength.
+```{r}
+# Calculate eta squared
+SSB <- sum(anova_model$effects[-1]^2)  # Sum of squares between groups
+SST <- sum(anova_model$residuals^2) + SSB  # Total sum of squares
+eta_squared <- SSB / SST  # Eta squared
+print(eta_squared)
+```
+
+The $\eta^2$ value of approximately 0.798 suggests that approximately 79.8% of the variability in the Tensile Strength can be explained by the different levels of CWP. This is considered a large effect size, indicating that the levels of CWP have a practically meaningful and substantial effect on tensile strength. In practical terms, this implies that changes in CWP levels are associated with significant changes in tensile strength, and understanding or controlling CWP levels can be crucial for managing tensile strength effectively.
+
+**Q3. (50 points)**
+Consider the ToothGrowth dataset from the R package *datasets*. The response is ***len***, the length of odontoblasts (cells responsible for tooth growth) in 60 guinea pigs. 
+Each animal received one of three dose levels of vitamin C (0.5, 1, and 2 mg/day) denoted as the factor ***dose*** (Factor A) by one of two delivery methods, orange juice or ascorbic acid (a form of vitamin C and coded as VC), denoted as the factor ***supp*** (Factor B).
+```{r}
+# Load the required dataset
+data(ToothGrowth)
+
+# View the structure of the dataset
+str(ToothGrowth)
+```
+
+(a)
+Fit and interpret a one-factor ANOVA model relating the response ***len*** to ***dose*** (Factor A).
+
+Null Hypothesis: The mean length of odontoblasts is the same for all levels of dose.
+
+$H_0$: $\mu_1 = \mu_2 = \mu_3$
+
+where $\mu_i$ is the mean length of odontoblasts for level $i$ of dose.
+
+Alternative Hypothesis: The mean length of odontoblasts is different for at least one level of dose.
+
+$H_a$: $\mu_i \neq \mu_j$ for at least one pair of levels $i$ and $j$ of dose.
+
+Assumptions (WILL BE VALIDATED AFTER RUNNING ANOVA MODEL):
+
+Normality:
+
+We assume that the length of odontoblasts for each level of dose is normally distributed.
+
+Independence:
+
+We assume that the length of odontoblasts for each level of dose is independent of the length of odontoblasts for the other levels of dose.
+
+Equal Variance:
+
+```{r}
+# Create boxplots by dose levels using ggplot
+ggplot(ToothGrowth, aes(x=as.factor(dose), y=len, fill=as.factor(dose))) + 
+    geom_boxplot(show.legend = FALSE) +
+    labs(x="Dose Levels", y="Length of Odontoblasts") +
+    theme_minimal() +
+    ggtitle("Boxplots of Length of Odontoblasts by Dose Levels")
+```
+We assume that the variance of the length of odontoblasts for each level of dose is equal.
+
+```{r}
+# Fit a one-factor ANOVA model
+anova_model_dose <- aov(len ~ as.factor(dose), data = ToothGrowth)
+summary(anova_model_dose)
+```
+Interpretation:
+
+The output of the summary indicates that the F-value for the one-factor ANOVA model relating the response len to dose is 67.42, and the associated p-value is extremely small (9.53e-16), much less than 0.05.
+
+This very small p-value provides strong evidence against the null hypothesis that all group means are equal, suggesting that there are statistically significant differences in the means of len (length of odontoblasts) among the three dose levels of vitamin C.
+
+In conclusion, at a 5% significance level, there is overwhelming evidence to suggest that different dose levels of vitamin C have a significant impact on the length of odontoblasts in guinea pigs.
+
+Validate Assumptions:
+
+Normality:
+
+Null Hypothesis: The residuals $e_{ij}$ are normally distributed.
+
+$H_0$: $e_{ij} \sim N(0, \sigma^2)$
+
+where $e_{ij}$ is the residual for the $j$th observation in the $i$th level of dose.
+
+Alternative Hypothesis: The residuals $e_{ij}$ are not normally distributed.
+
+$H_a$: $e_{ij} \nsim N(0, \sigma^2)$
+
+```{r}
+aovfits <- fitted(anova_model_dose)
+aovres <- residuals(anova_model_dose)
+car::qqPlot(aovres, main = "Q-Q Plot of Residuals", pch = 19, col = 2, cex = 0.7)
+```
+```{r}
+shapiro.test(aovres)
+```
+The large $p$-value (much greater than 0.05) from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
+
+Equal Variance:
+
+Null Hypothesis: The variance of the length of odontoblasts for each level of dose is equal.
+
+$H_0$: $\sigma_1^2 = \sigma_2^2 = \sigma_3^2$
+
+where $\sigma_i^2$ is the variance of the length of odontoblasts for level $i$ of dose.
+
+Alternative Hypothesis: The variance of the length of odontoblasts for each level of dose is not equal.
+
+$H_a$: $\sigma_i^2 \neq \sigma_j^2$ for at least one pair of levels $i$ and $j$ of dose.
+
+```{r}
+levene_result_lawstat <- levene.test(ToothGrowth$len, factor(ToothGrowth$dose))
+
+print(levene_result_lawstat)
+```
+The large $p$-value (much greater than 0.05) from the Levene significance test for equal variance validates the equal variance assumption.
+
+(b)
+Fit and interpret a one-factor ANOVA model relating the response ***len*** to ***supp*** (Factor B).
+
+Null Hypothesis: The mean length of odontoblasts is the same for all levels of supp.
+
+$H_0$: $\mu_1 = \mu_2$
+
+where $\mu_i$ is the mean length of odontoblasts for level $i$ of supp.
+
+Alternative Hypothesis: The mean length of odontoblasts is different for at least one level of supp.
+
+$H_1$ $\mu_i \neq \mu_j$ for at least one pair of levels $i$ and $j$ of supp.
+
+Assumptions (WILL BE VALIDATED AFTER RUNNING ANOVA MODEL):
+
+Normality:
+
+We assume that the length of odontoblasts for each level of supp is normally distributed.
+
+Independence:
+
+We assume that the length of odontoblasts for each level of supp is independent of the length of odontoblasts for the other levels of supp.
+
+Equal Variance:
+
+```{r}
+# Create boxplots by supp levels using ggplot
+ggplot(ToothGrowth, aes(x=as.factor(supp), y=len, fill=as.factor(supp))) + 
+    geom_boxplot(show.legend = FALSE) +
+    labs(x="Supp Levels", y="Length of Odontoblasts") +
+    theme_minimal() +
+    ggtitle("Boxplots of Length of Odontoblasts by Supp Levels")
+```
+We assume that the variance of the length of odontoblasts for each level of supp is equal.
+
+```{r}
+# Fit a one-factor ANOVA model with supp as the factor
+anova_model_supp <- aov(len ~ as.factor(supp), data = ToothGrowth)
+summary(anova_model_supp)
+```
+Interpretation:
+
+The output of the summary indicates that the F-value for the one-factor ANOVA model relating the response len to supp is approximately 3.67, and the associated p-value is 0.0604.
+
+This p-value is greater than the conventional alpha level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis that the means of len are equal across the different levels of supp at the 5% significance level. In other words, based on the available data, we do not have sufficient statistical evidence to conclude that the supplement type (supp) has a significant impact on the length of odontoblasts (len) in guinea pigs.
+
+Validate Assumptions:
+
+Normality:
+
+Null Hypothesis: The residuals $e_{ij}$ are normally distributed.
+
+$H_0$: $e_{ij} \sim N(0, \sigma^2)$
+
+where $e_{ij}$ is the residual for the $j$th observation in the $i$th level of supp.
+
+Alternative Hypothesis: The residuals $e_{ij}$ are not normally distributed.
+
+$H_a$: $e_{ij} \nsim N(0, \sigma^2)$
+
+```{r}
+aovfits <- fitted(anova_model_supp)
+aovres <- residuals(anova_model_supp)
+car::qqPlot(aovres, main = "Q-Q Plot of Residuals", pch = 19, col = 2, cex = 0.7)
+```
+```{r}
+shapiro.test(aovres)
+```
+The large $p$-value (much greater than 0.05) from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
+
+Equal Variance:
+
+Null Hypothesis: The variance of the length of odontoblasts for each level of supp is equal.
+
+$H_0$: $\sigma_1^2 = \sigma_2^2$
+
+where $\sigma_i^2$ is the variance of the length of odontoblasts for level $i$ of supp.
+
+Alternative Hypothesis: The variance of the length of odontoblasts for each level of supp is not equal.
+
+$H_a$: $\sigma_i^2 \neq \sigma_j^2$ for at least one pair of levels $i$ and $j$ of supp.
+
+```{r}
+levene_result_lawstat <- levene.test(ToothGrowth$len, factor(ToothGrowth$supp))
+
+print(levene_result_lawstat)
+```
+The large $p$-value (much greater than 0.05) from the Levene significance test for equal variance validates the equal variance assumption.
+
+(c)
+Fit and interpret an additive two-factor ANOVA model relating the response ***len*** to ***dose*** (Factor A) and ***supp*** (Factor B).
+
+Null Hypothesis: The mean length of odontoblasts is the same for all levels of dose and supp.
+
+$H_0$: $\mu_{11} = \mu_{12} = \mu_{21} = \mu_{22} = \mu_{31} = \mu_{32}$
+
+where $\mu_{ij}$ is the mean length of odontoblasts for level $i$ of dose and level $j$ of supp.
+
+Alternative Hypothesis: The mean length of odontoblasts is different for at least one level of dose and supp.
+
+$H_1$: $\mu_{ij} \neq \mu_{kl}$ for at least one pair of levels $i$ and $j$ of dose and levels $k$ and $l$ of supp.
+
+ASSUMPTIONS HAVE BEEN VALIDATED IN PARTS (a) AND (b).
+```{r}
+# Create boxplots by dose and supp levels using ggplot
+ggplot(ToothGrowth, aes(x=as.factor(dose), y=len, fill=as.factor(supp))) + 
+    geom_boxplot(show.legend = FALSE) +
+    labs(x="Dose Levels", y="Length of Odontoblasts") +
+    theme_minimal() +
+    ggtitle("Boxplots of Length of Odontoblasts by Dose and Supp Levels")
+```
+
+```{r}
+# Fit an additive two-factor ANOVA model
+anova_model_additive <- aov(len ~ as.factor(dose) + as.factor(supp), data = ToothGrowth)
+summary(anova_model_additive)
+```
+
+Interpretation:
+The summary of the additive two-factor ANOVA model indicates that both dose and supp are significant factors affecting the response variable len.
+
+Dose Factor:
+
+F-value: 82.81
+
+p-value: < 2e-16 (extremely small)
+
+The extremely small p-value for the dose factor suggests that there is overwhelming evidence to reject the null hypothesis that all dose level means are equal. In other words, there are significant differences in the length of odontoblasts among the different dose levels of vitamin C.
+
+Supp Factor:
+
+F-value: 14.02
+
+p-value: 0.000429
+
+The small p-value for the supp factor suggests that there is strong evidence to reject the null hypothesis that the means of len are equal across the different levels of supp. This implies that the supplement type (supp) has a significant impact on the length of odontoblasts (len) in guinea pigs when considered in conjunction with the dose levels in the additive model.
+
+(d)
+Fit and interpret a two-factor ANOVA model with interaction relating the response ***len*** to ***dose*** (Factor A) and ***supp*** (Factor B).
+
+The null and alternative hypothesis are the same as in part (c).
+
+ASSUMPTIONS HAVE BEEN VALIDATED IN PARTS (a) AND (b).
+
+```{r}
+# Fit a two-factor ANOVA model with interaction
+anova_model_interaction <- aov(len ~ as.factor(dose) * as.factor(supp), data = ToothGrowth)
+summary(anova_model_interaction)
+```
+
+Interpretation:
+
+The output of the summary indicates the presence of main effects for both dose and supp, as well as an interaction effect between dose and supp on the response variable len.
+
+Dose Factor:
+
+F-value: 92.00
+
+p-value: < 2e-16 (extremely small)
+
+This extremely small p-value for the dose factor provides overwhelming evidence against the null hypothesis that all dose level means are equal, indicating significant differences in the length of odontoblasts among the different dose levels of vitamin C.
+
+Supp Factor:
+
+F-value: 15.572
+
+p-value: 0.000231
+
+The small p-value for the supp factor provides strong evidence against the null hypothesis that the means of len are equal across the different levels of supp. This implies that the supplement type (supp) has a significant impact on the length of odontoblasts (len) in guinea pigs.
+
+Interaction between Dose and Supp:
+
+F-value: 4.107
+
+p-value: 0.021860
+
+The interaction term between dose and supp is also significant with a p-value of 0.021860, which is less than 0.05. This suggests that the effect of dose on the length of odontoblasts is not consistent across the different levels of supp; the impact of vitamin C dose on tooth growth depends on the method of supplement delivery. The presence of a significant interaction term implies that the combined effect of dose and supp is not simply the sum of their individual effects, and the interaction between them should be considered when studying their impact on tooth growth.
+
+(e) Summarize what you learned from the analyses in  (a) - (d).
+- Both dose and supp have significant main effects on the length of odontoblasts.
+- There is a significant interaction between dose and supp, indicating that the effect of one factor depends on the level of the other.
+- While dose consistently showed a strong effect on tooth growth, the significance of supp became evident when considering it in conjunction with dose in the two-factor models.
+
+**Q4. Open question. Not graded for credit.**
+Choose an application domain that interests you. Find/download an interesting data set in this domain which lends to analysis using one-factor or two-factor ANOVA analysis. Carry out a comprehensive analysis (testing assumptions, testing a suitable hypothesis, estimating effects etc.). Summarize as a report. You can share this on Discussion Board, and include on your Github page. 
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(car)
+
+# Load the modified dataset with the 'Division' column
+data <- read.csv("/Users/giovanni-lunetta/uconn_masters/stat5405/hw_4/merged_with_mapped_salaries_and_conference_df.csv")
+```
+
+Null Hypothesis: The mean team pace is the same for all divisions.
+
+$H_0$: $\mu_1 = \mu_2 = \mu_3 = \mu_4 = \mu_5$
+
+where $\mu_i$ is the mean team pace for division $i$.
+
+Alternative Hypothesis: The mean team pace is different for at least one division.
+
+$H_a$: $\mu_i \neq \mu_j$ for at least one pair of divisions $i$ and $j$.
+
+Assumptions (WILL BE VALIDATED AFTER RUNNING ANOVA MODEL):
+
+Normality:
+
+We assume that the team pace for each division is normally distributed.
+
+Independence:
+
+We assume that the team pace for each division is independent of the team pace for the other divisions.
+
+Equal Variance:
+
+```{r}
+# Create boxplots by division using ggplot
+ggplot(data, aes(x=as.factor(Division), y=Team_Pace, fill=as.factor(Division))) + 
+    geom_boxplot(show.legend = FALSE) +
+    labs(x="Division", y="Team Pace") +
+    theme_minimal() +
+    ggtitle("Boxplots of Team Pace by Division")
+```
+We assume that the variance of the team pace for each division is equal.
+
+```{r}
+# Convert Division and Conference to factors
+data$Division <- as.factor(data$Division)
+data$Conference <- as.factor(data$Conference)
+```
+
+```{r}
+# Run one-way ANOVA
+anova_result <- aov(Team_Pace ~ Division, data = data)
+
+# View the summary of the ANOVA result
+summary(anova_result)
+```
+
+Interpretation:
+
+The p-value is the probability that you obtain the observed results, or more extreme, given that the null hypothesis is true. A smaller p-value (< 0.05) usually indicates that you can reject the null hypothesis.
+
+In this case, the p-value obtained from the one-way ANOVA is 0.233. Since this value is greater than the common alpha level of 0.05, we fail to reject the null hypothesis.
+
+Conclusion:
+
+Based on our analysis, there is not sufficient evidence to conclude that there is a significant difference in the mean team pace among the different divisions, at the 0.05 significance level. In other words, we do not have enough statistical evidence to say that the mean team pace is different for at least one division.
+
+Further Remarks:
+
+Even though there isn’t a significant difference in the mean team pace among the divisions, it could be insightful to explore other factors or variables that might affect team pace. Additionally, exploring the interactions between different variables might reveal significant effects that are not apparent when considering each variable separately.
+
+Validating Assumptions:
+
+Since the p-value is not less than 0.05, strictly speaking, there is no need to check the assumptions of normality and equal variance (homogeneity of variance), as we do not proceed with post hoc tests when you fail to reject the null hypothesis in ANOVA.
+
+Next Steps:
+
+What if there is a difference in pace between conferences (Eastern and Western)?
+
+Null Hypothesis: The mean team pace is the same for both conferences.
+
+$H_0$: $\mu_{Eastern} = \mu_{Western}$
+
+where $\mu_{Eastern}$ is the mean team pace for the Eastern conference and $\mu_{Western}$ is the mean team pace for the Western conference.
+
+Alternative Hypothesis: The mean team pace is different for the two conferences.
+
+$H_a$: $\mu_{Eastern} \neq \mu_{Western}$
+
+Assumptions (WILL BE VALIDATED AFTER RUNNING ANOVA MODEL):
+
+Normality:
+
+We assume that the team pace for each conference is normally distributed.
+
+Independence:
+
+We assume that the team pace for each conference is independent of the team pace for the other conference.
+
+Equal Variance:
+
+```{r}
+# Create boxplots by conference using ggplot
+ggplot(data, aes(x=as.factor(Conference), y=Team_Pace, fill=as.factor(Conference))) + 
+    geom_boxplot(show.legend = FALSE) +
+    labs(x="Conference", y="Team Pace") +
+    theme_minimal() +
+    ggtitle("Boxplots of Team Pace by Conference")
+```
+We assume that the variance of the team pace for each conference is equal.
+
+```{r}
+# Run one-way ANOVA for Conference
+anova_result_conference <- aov(Team_Pace ~ Conference, data = data)
+
+# View the summary of the ANOVA result
+summary(anova_result_conference)
+```
+
+Interpretation:
+
+The p-value is the probability that you obtain the observed results, or more extreme, given that the null hypothesis is true. A smaller p-value (< 0.05) usually indicates that you can reject the null hypothesis.
+
+In this case, the p-value obtained from the one-way ANOVA is 0.0383. Since this value is less than the common alpha level of 0.05, we reject the null hypothesis.
+
+Conclusion:
+
+Based on our analysis, there is sufficient evidence to conclude that there is a significant difference in the mean team pace between the two conferences, at the 0.05 significance level. In other words, we have enough statistical evidence to say that the mean team pace is different between the conferences.
+
+Validating Assumptions:
+
+Normality:
+
+Null Hypothesis: The residuals $e_{ij}$ are normally distributed.
+
+$H_0$: $e_{ij} \sim N(0, \sigma^2)$
+
+where $e_{ij}$ is the residual for the $j$th observation in the $i$th conference.
+
+Alternative Hypothesis: The residuals $e_{ij}$ are not normally distributed.
+
+$H_a$: $e_{ij} \nsim N(0, \sigma^2)$
+
+```{r}
+aovfits <- fitted(anova_result_conference)
+aovres <- residuals(anova_result_conference)
+car::qqPlot(aovres, main = "Q-Q Plot of Residuals", pch = 19, col = 2, cex = 0.7)
+```
+```{r}
+shapiro.test(aovres)
+```
+The $p$-value of 0.1786 from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
+
+Equal Variance:
+
+Null Hypothesis: The variance of the team pace for each conference is equal.
+
+$H_0$: $\sigma_{Eastern}^2 = \sigma_{Western}^2$
+
+where $\sigma_{Eastern}^2$ is the variance of the team pace for the Eastern conference and $\sigma_{Western}^2$ is the variance of the team pace for the Western conference.
+
+Alternative Hypothesis: The variance of the team pace for each conference is not equal.
+
+$H_a$: $\sigma_{Eastern}^2 \neq \sigma_{Western}^2$
+
+```{r}
+levene_result_lawstat <- levene.test(data$Team_Pace, factor(data$Conference))
+
+print(levene_result_lawstat)
+```
+The $p$-value of 0.9101 from the Levene significance test for equal variance validates the equal variance assumption.
+
+Overall Conclusion:
+
+Based on our analysis, there is sufficient evidence to conclude that there is a significant difference in the mean team pace between the two conferences, at the 0.05 significance level. In other words, we have enough statistical evidence to say that the mean team pace is different between the conferences.
+
+
+

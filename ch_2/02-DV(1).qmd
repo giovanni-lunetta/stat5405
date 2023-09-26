@@ -1,0 +1,1069 @@
+# Data Visualization {#sec-ch2DV}
+
+## Introduction {#sec-ch2intro}
+
+**Data visualization** is often the first step in any data analysis. Pictorial representations give useful initial insights about the data and also become useful in model diagnostics. We discuss visualization tools for quantitative data and qualitative data, and for independent and dependent multivariate data samples.
+
+Histograms, boxplots and stem-and-leaf plots are popularly used for the exploration of numerical (quantitative) data.
+
+Qualitative data usually occur as categories or labels and are usually represented using barplots, pie diagrams, etc.
+
+In many situations, we must assess whether a random sample could have been generated from a normal population. The normal quantile-quantile, or Q-Q plot is a graphical way to do this, and is often preferred to significance tests that enable the assessment.
+
+We use graphic capabilities in R.
+
+```{r, eval=FALSE}
+demo(graphics)
+```
+
+
+We look at visualizing quantitative data in @sec-ch2graphs1. Section 
+@sec-qqplots discusses theoretical and empirical quantile-quantile (Q-Q) plots.
+@sec-qualitative shows a few graphical methods for qualitative data.
+
+
+
+## Visualization for Quantitative Data {#sec-ch2graphs1}
+
+*Quantitative (numerical) data* are either real-valued or integer-valued.
+
+
+### Dataset: Trees {#sec-ch2exmtrees}
+
+The [trees]{style="color:green;"} data is available in the *datasets* package in R. It provides measurements of the girth, height and volume of timber in 31 felled black cherry trees. The girth is the diameter of the tree (in inches) measured at 4ft 6in above the ground.
+
+We access the data, and store as a data frame with 31 observations (rows) and 3 numeric variables (columns), ***Girth***, ***Height***, ***Volume***. Use *str()* function to see that all three variables are numerical.
+
+```{r}
+data(trees)
+str(trees)
+```
+
+
+### Histograms {#sec-ch2histogram}
+
+A histogram is a pictorial representation of numerical or quantitative data. It uses rectangles to show the frequencies, or relative frequencies, of data items in successive intervals. The shape of a histogram provides useful information such as the location, spread, skewness, outliers and data density.
+
+We construct a histogram by
+
+(a) dividing the entire range of data values into a series of intervals called bins, which are represented along the x-axis, and
+
+(b) showing the frequencies (or relative frequencies of data items) as rectangles on the y-axis.
+
+Use the command
+
+*hist(x, breaks=, freq=NULL, right=TRUE, density=NULL, angle=45)*,
+
+where x is the vector of values for which the histogram is to be plotted.
+
+We can specify the number of bins by using the option *breaks=*.
+
+When *freq=FALSE*, probability densities (relative frequencies) are plotted. Else, frequencies are plotted. Note that *freq=FALSE* implies *prob=TRUE*.
+
+For *right=TRUE*, the cells in the histogram will be right-closed (left open) intervals. Example $(8.3, 10.5]$.
+
+
+::: {#exm-treeshistogram}
+
+@fig-treeshist1 shows a histogram of relative frequencies as heights on equal width intervals on the x-axis.
+
+```{r}
+#| label: fig-treeshist1
+#| fig.cap: "Histogram of tree heights showing relative frequency" 
+# Histogram, kernel density plot, normal density plot 
+hist(trees$Height, main=NA, breaks=8, col='lightgreen', prob=TRUE, 
+     xlab="height")
+```
+
+The option *prob=FALSE* will show frequencies on the y-axis.
+
+The option *main* allows us to set the heading of the histogram. Setting *main=NA* disables the display of the heading.
+
+The option *density* provides the density of shading lines, in lines per inch, the default value of *density=NULL* giving no shading lines. The option *angle* gives the slope of shading lines. See @fig-treeshist2.
+
+```{r}
+#| label: fig-treeshist2 
+#| fig.cap: "Histogram of tree heights showing frequency" 
+# Histogram, kernel density plot, normal density plot 
+hist(trees$Height, main="Histogram", breaks=8, col='lightgreen', prob=FALSE, 
+     density = T, angle = 60, xlab="height")
+```
+
+We may also add a **kernel density plot** to the histogram. Using kernel density estimation, or kernel smoothing to smooth out noise leads to a smoother distribution than a histogram; see @fig-treeshist3.
+
+```{r}
+#| label: fig-treeshist3 
+#| fig.cap: "Histogram of tree heights with kernel density plot" 
+# Histogram, kernel density plot, normal density plot 
+hist(trees$Height, main="Histogram with kernel density plot", breaks=8, 
+     col='lightgreen', prob=T, xlab="height")
+lines(density(trees$Height), col="blue", lwd=2) #kernel density plot
+```
+
+**Note**: 
+The *density* option in the *hist()* function controls the density of the filled rectangles. 
+We must not confuse this with the *density()* function which is used to compute the density of a distribution.
+
+We can also overlay the histogram with a normal distribution, using the *dnorm()* function, which calculates the normal probability density function with mean and standard deviation set to be the same as in the observed data. 
+This helps us see the extent to which the histogram is similar to data from a normal distribution. These are shown in @fig-treeshist.
+
+The *legend()* function was used to add a legend to the plot. 
+
+The *cex* option controls the font size of the legend items. 
+
+The *bty* option controls the box type. In this case, it is set to have no box.
+
+```{r}
+#| label: fig-treeshist 
+#| fig.cap: "Histogram of tree heights with kernel density and normal density." 
+# Histogram, kernel density plot, normal density plot 
+hist(trees$Height, main=NA, breaks=8, col='lightgreen', prob=T, 
+     xlab="height")
+lines(density(trees$Height), col="blue", lwd=2) #kernel density plot
+# normal density plot
+x <- seq(min(trees$Height), max(trees$Height), 0.01)
+curve(dnorm(x, mean=mean(trees$Height), sd=sd(trees$Height)), add=T, 
+      col="red", lty=2, lwd=2)
+legend("topleft", c("Kernel Density", "Normal"), col=c("blue", "red"), 
+       lty=c(1,2), cex=0.8, bty = "n")
+```
+
+
+
+**Histogram using *ggplot()***
+
+```{r, warning=FALSE}
+library(ggplot2)
+library(gridExtra)
+```
+
+
+@fig-treeshistgg shows the histogram constructed using the *ggplot2* package.
+
+Line 4 in the code mentions the [trees]{style="color:green;"} data and the corresponding variable to be plotted on the x axis, i.e., 
+***Height***.
+
+In line 5, *breaks=seq(60,90,5)* adds a bin of range 60-90 in increments of 5 to the x-axis;  the y axis is the probability density.
+
+In line 6, *color="black"* specifies the outline for the bars, *fill="lightgreen"* 
+is the color to fill the bars, *closed="left"* means that the left boundary point of the bin is included in the intervals.
+
+
+```{r}
+#| label: fig-treeshistgg 
+#| fig.cap: "Histogram of tree heights with kernel density and normal density, 
+#| using ggplot" 
+ggplot(trees, aes(x = Height)) + 
+  stat_bin(breaks = seq(60, 90, by = 5),aes(y=after_stat(density)), 
+           colour = "black",fill = "lightgreen",closed = "left") + 
+           scale_x_continuous(breaks = seq(60, 90, by = 5)) + 
+  geom_density(aes(color="Kernel Density"),linewidth=1) + # Add kernel density
+  geom_function(fun = dnorm, args = list(mean = mean(trees$Height), 
+     sd = sd(trees$Height)),aes(color="Normal"),linetype="dashed",linewidth=1) + 
+     scale_color_manual(name="",values=c("blue","red"))# Add normal density 
+```
+
+
+The option *geom_density* computes and draws the kernel density estimate; see
+<https://ggplot2.tidyverse.org/reference/geom_density.html>
+
+The option *geom_function* with *fun = dnorm* enables us to obtain the
+normal density plot; see 
+<https://ggplot2.tidyverse.org/reference/geom_function.html> 
+
+Aesthetic mappings are set with the *aes()* function. Examples include
+position on the x and y axes, color, fill, shape of points, line type, and
+size.
+
+:::
+
+
+### Dataset: Tensile strength {#sec-ch2exmtensile}
+
+We look at the [tensile]{style="color:green;"} data. Source: @montgomery2017design.
+
+An engineer wants to see whether the cotton weight percentage in a synthetic fiber affects its tensile strength. The cotton weight percentage, ***CWP*** is fixed at five different levels, i.e., $15\%, 20%\, 25\%, 30\%$, and $35\%$. Each percentage level is assigned five experimental units and the tensile strength of the fabric is measured on each of them. The randomization is specified in the column ***Run Number***.
+
+The goal of the engineer is to investigate whether tensile strength is the same across all levels of cotton weight percentage.
+
+```{r}
+tensile <- read.csv('Data/tensile.csv', header=TRUE)
+str(tensile$CWP) # int [1:25] 20 30 20 35 30 15 25 20 25 30 ...
+```
+
+
+The variable ***CWP*** is interpreted by R to be integer-valued. We  use the *as.factor()* command to coerce ***CWP*** to a factor variable.
+
+```{r}
+tensile$CWP <- as.factor(tensile$CWP)
+str(tensile$CWP) # Factor w/ 5 levels "15","20","25",..: 2 4 2 5 4 1 3 2 3 4 ...
+```
+
+
+
+### Boxplots {#sec-boxplot}
+
+A box and whisker plot, also known as a boxplot, is a popular way of displaying the distribution of numerical data based on the five number summary. The **five number summary** of a sample dataset includes the minimum, first quartile, median, third quartile, and maximum. Boxplots display information about the shape of the data distribution as well as its central value and variability.
+
+The box represents the middle 50\% of the data. Boxplots also have lines extending vertically from the boxes; these are called whiskers and indicate variability beyond the upper and lower quartiles. The spacing between the different parts of the box indicates the degree of dispersion (spread) and skewness in the data and also reveals outliers.
+
+To draw a boxplot of the data, use the command *boxplot(x, range=, width=, notch=, outline=, names, horizontal=)*.
+
+The option *range* provides a distance to which the whiskers extend out from the box.
+
+The option *width* allows us to set the width of the boxes.
+
+The option *outline=TRUE* determines whether the outliers are to be shown.
+
+By default, the boxplots are vertical. The option *horizontal=T* gives horizontal boxplots.
+
+The option *notch=T* provides notches on each side of the box. If the notches in two boxplots do not overlap, we can conclude that the two medians differ.
+
+
+
+::: {#exm-tensileBoxplots}
+
+We draw a separate boxplot of tensile strength for each level of ***CWP***. These side-by-side boxplots in @fig-0202 are also called parallel boxplots. They are useful to look at differences between groups.
+
+```{r}
+#| label: fig-0202
+#| fig.cap: "Boxplot of tensile strength for all the data, and side-by-side 
+#|  boxplots for tensile strength versus CWP."
+par(mfrow=c(1,2))
+boxplot(tensile$strength, xlab="cotton weight percentage", ylab="strength", 
+        border = "blue", col="lightblue")
+boxplot(tensile$strength ~ tensile$CWP, xlab="cotton weight percentage", 
+        ylab="strength", border = "blue", col="lightblue")
+```
+
+Except maybe for ***CWP*** $=15\%$, the distributions of the strength appear rather skewed since the line is not in the middle of the box in those cases.
+
+There are three outliers (at $25\%$ and $35\%$). However, we must keep in mind that there are only five observations per group.
+
+What is perhaps most striking about this figure, is that the tensile strength increases when cotton weight percentage increases from $15\%$ to $30\%$, but increasing ***CWP*** further causes a sharp drop in tensile strength.
+
+
+**Boxplot using ggplot2**
+
+@fig-0202gg shows the boxplots constructed using *ggplot2*.
+
+```{r}
+#| label: fig-0202gg
+#| fig.cap: "Boxplot of tensile strength for all the data, and side-by-side 
+#|  boxplots for tensile strength versus CWP."
+p1 <- ggplot(data = tensile,mapping = aes(y=strength,x=0)) +
+  geom_boxplot(col="blue",fill="lightblue",width=0.1) + 
+  xlab("cotton weight percentage") + 
+  ylab("strength") + theme_light()
+
+p2 <- ggplot(data = tensile,mapping = aes(y=strength,x=CWP)) +
+  geom_boxplot(col="blue",fill="lightblue") + 
+  xlab("cotton weight percentage") + 
+  ylab("strength") + theme_light()
+
+# Arrange the plots:
+grid.arrange(p1, p2, nrow = 1)
+```
+
+:::
+
+
+### Stem-and-Leaf Plots {#sec-stemleaf}
+
+A stem-and-leaf plot is a textual graph of quantitative data.
+
+Each data value is split into a stem and a leaf. The plot shows the frequency with which certain classes of values occur.
+For cases where there are many leaves per stem, we may split the data corresponding to one stem into several rows to enhance readability.
+
+We can use a stem-and-leaf plot for
+
+(a) showing the frequency corresponding to observed data values,
+
+(b) checking skewness of the data, and
+
+(c) detecting outliers.
+
+We can use the command *stem(x, scale=, width=)* where x is a numeric vector. The values assigned to *scale* and *width* control the length and width of the plot respectively. The default is *scale=1* and *width=80*.
+
+
+::: {#exm-tressStemLeaf}
+
+The stem-and-leaf plot of ***Volume*** in the [trees]{style="color:green;"} data is obtained as follows:
+
+```{r}
+#| label: fig-treesstemleaf
+#| fig-cap: "Stem and leaf plot: scale controls the length of the plot."
+sort(trees$Volume)
+stem(trees$Volume) 
+stem(trees$Volume,scale = 1)  # default
+stem(trees$Volume,scale = 2) 
+```
+
+Observe that the distribution of ***Volume*** is right skewed. Most of the data values lie in the range 15-25. Also, the last row of the stem plot (data value=77) may be considered an outlier.
+
+**Stem-and-leaf plot using aplpack library**
+
+```{r, warning=FALSE}
+library(aplpack)
+```
+
+```{r}
+stem.leaf(trees$Volume,unit = 0.1)
+```
+
+:::
+
+
+### Dataset: Crab mating {#sec-ch2exmcrabmating}
+
+Each female horseshoe crab in this study had a male crab attached to her in her nest. 
+The study investigated some factors that were thought to affect whether the female 
+crab had any other males residing nearby, called satellites. 
+These factors included the color, spine condition, weight (kg), 
+and carapace width (cm) of the female crabs. 
+See @agr13.
+The [crabs]{style="color:green;"} data is available in the R package *glmbb*. 
+
+```{r, warning=FALSE}
+library(glmbb)
+```
+
+```{r}
+data(crabs)
+str(crabs)
+```
+
+The data has $173$ observations on six variables. The function *str(crabs)* shows that four are quantitative variables, while
+***spine*** and ***color*** are factors.
+
+```{r}
+table(crabs$spine)
+table(crabs$color)
+```
+
+The spine condition levels are coded as bad, good, middle. 
+The levels of color are coded as dark, darker, light, medium.
+
+It is possible to change the order of levels in a factor. 
+For example, to change the order of levels in ***color***, use
+
+```{r}
+crabs$color <- factor(crabs$color, levels=c("light",  "medium", 
+                                            "dark", "darker"))
+```
+
+
+The ***spine*** variable is also reordered (bad, middle, good).
+
+```{r}
+crabs$spine <- factor(crabs$spine, levels=c("bad", "middle", "good")) 
+```
+
+Check the reordered levels:
+
+```{r}
+table(crabs$spine)
+table(crabs$color)
+```
+
+
+### Dot Plot {#sec-dotplot}
+
+A **dot plot** or a dot chart, which is sometimes referred to as a one-dimensional scatterplot, is a simple and compact way to describe univariate data. It consists of a plot of the data along an axis labeled according to the measurement scale.
+
+We can plot a dot chart using the command *dotchart(x, labels=NULL, groups=NULL, gdata=NULL)*.
+
+Here x is a vector or matrix of numeric values. The option *labels* provides labels for each point. Grouping the elements of x can be done using the option *groups*.
+
+The option *gdata* provides the data values for the groups which is usually a summary statistic such as mean or median of each group.
+
+
+::: {#exm-crabmatingDotplot}
+
+@fig-0203 shows a dot plot for the [crabs]{style="color:green;"} data.
+
+The options *lty=* and *lwd=* specifies line type and line width, the default in each case being $1$.
+
+Try changing the *pch* option to any number between $1$ and $25$.
+
+Use *?points* to see the possible shapes for points in R.
+
+The *scale_fill_manual* option allows you to manually color the dots.
+
+```{r}
+#| label: fig-0203
+#| fig.cap: "Dot plot of color of crabs categorized by spine condition." 
+with(crabs, {
+  y <- table(color, spine)
+  dotchart(y, color = c("grey60","grey45","grey30","black"), pch=17, 
+           main=NA, xlab="Counts")
+})
+```
+
+
+
+**Dotplot using ggplot2**
+
+We can use *ggplot2* package to create a dotplot; see @fig-0203gg.
+
+```{r}
+#| label: fig-0203gg
+#| fig.cap: "Dot plot of color of crabs categorized by spine condition." 
+tab <- table(crabs$color,crabs$spine)
+df1 <- data.frame(tab)
+colnames(df1) <- c("Color","Spine","Count")
+p <-ggplot(df1, aes(x=Count, y=Spine,fill=Color)) +
+  geom_dotplot(binaxis='y', stackdir='center') + 
+  scale_fill_manual(name=c("light","medium","dark","darker")
+                    ,values=c("antiquewhite","coral2","cyan4","black"))
+p
+```
+
+
+You can set *binwidth* as follows in code line 7: 
+*geom_dotplot(binaxis='y', stackdir='center',binwidth=1/15)*.
+
+
+:::
+
+
+
+
+### Scatterplots {#sec-scatterplot}
+
+A scatterplot is a graph in which each data point is plotted in a two-dimensional coordinate system. If the points show a tendency to lie about a line with either positive or negative slope we can suspect a linear relationship.
+
+To draw a scatterplot of data on two variables x and y, use the command *plot(x,y)*.
+
+
+::: {#exm-treesScatterplot}
+
+We use the [trees]{style="color:green;"} data from @sec-ch2exmtrees. The variables ***Volume*** and ***Girth*** are associated with the same tree and so we expect a relation between them. The scatterplot in @fig-0206 suggests a linear relationship between these variables.
+
+```{r}
+#| label: fig-0206
+#| fig.cap: "Scatterplots for the trees data. Volume versus Girth." 
+with(trees, {
+  plot(Girth, Volume, main=NA, xlab= "Girth", ylab="Volume", pch=20, 
+       col=2, cex=1.5)
+})
+```
+
+Likewise, we also look at a scatterplot of ***Volume*** and ***Height*** in @fig-0206b. Here, the points are more randomly scattered in the scatterplot, suggesting that a strong linear relationship between ***Volume*** and ***Height*** is less likely.
+
+```{r}
+#| label: fig-0206b
+#| fig.cap: "Scatterplots for the trees data. Volume versus Height."
+with(trees, {
+  plot(Height, Volume, main=NA, xlab= "Height", ylab="Volume", pch=23, col=4) 
+})
+```
+
+Try changing *pch* and *col* to different values to see changes in the pattern and color of plotted points.
+
+**Scatterplot using ggplot2**
+
+See @fig-0206c for scatterplot of ***Volume*** versus ***Girth*** (left) and ***Volume*** versus ***Height*** (right), using *ggplot()*
+
+```{r}
+#| label: fig-0206c
+#| fig.cap: "Scatterplots for the trees data. Volume versus Height."
+par(mfrow=c(1,2))
+s1 <- ggplot(trees, aes(x=Girth, y=Volume)) + 
+  geom_point(shape=15,col="darkred")
+s2 <- ggplot(trees, aes(x=Height, y=Volume)) + 
+  geom_point(shape=2,color="darkblue")
+grid.arrange(s1,s2,nrow=1)
+```
+
+:::
+
+
+
+**Matrix Scatterplot**
+
+We can use the *pairs()* function to create a scatterplot matrix or a matrix scatterplot to visualize relationships between three or more variables. The plot consists of pairwise scatterplots of the variables in a matrix format. 
+See [link](https://www.rdocumentation.org/packages/graphics/versions/3.6.2/topics/pairs) for details on options.
+
+
+::: {#exm-treesMatrixscatterplot}
+
+See @fig-treesmatscat for a matrix scatterplot of the three variables in the [trees]{style="color:green;"} data.
+
+```{r}
+#| label: fig-treesmatscat
+#| fig.cap: "Matrix Scatterplot for the trees data for Volume, 
+#| Girth and Height."
+pairs(cbind(trees$Volume,trees$Girth,trees$Height), panel = panel.smooth)
+```
+
+It is also possible to create a matrix scatterplot using the *scatterplotMatrix()* function in the *car* library. Kernel densities (by default) of the variables are shown along the main diagonal; see @fig-treesmatscat2.
+
+```{r, warning=FALSE}
+library(car)
+```
+
+
+```{r}
+#| label: fig-treesmatscat2
+#| fig.cap: "Matrix Scatterplot for the trees data for Volume, Girth and Height."
+scatterplotMatrix(~trees$Volume + trees$Girth + trees$Height, data=trees)
+
+```
+
+:::
+
+
+### Jittered, and Smoothed Scatterplots {#sec-jitteredscatter}
+
+In some datasets, multiple observations may have the same x and y values. For example, data may have been rounded, or the natural units of observations may be integers. Then, a jittered scatterplot may improve visualization of the data. Add a small amount of random noise to each data point. Then, we can avoid plotting different observations on top of one another.
+
+Use the *jitter(z)* function which modifies the numeric data, z, by a value drawn from a uniform distribution, i.e., $u \sim \text{Uniform}(-a,a)$. The default value for $a$ is $d/5$ where $d$ is the smallest difference between pairs of z values. This ensures that the ranking of the original points does not change after applying *jitter()*.
+
+When creating a scatterplot, we may jitter the data in both dimensions using *plot(jitter(x), jitter(y))*, or just in one, e.g., *plot(x, jitter(y))*.
+
+When the dataset is very large, a scatterplot may be too crowded, and it will be impossible to observe individual points. In such cases, we may want to use the *smoothScatter()* function in R. It produces a smooth density representation of the scatterplot, showing areas of high density in darker shades than areas of low density.
+
+
+::: {#exm-SimuldataJitter}
+
+To see how both features (jittering and smoothing) work, we use simulated data:
+
+```{r}
+n <- 10000
+x1  <- matrix(round(rnorm(n), digits=0), ncol = 2)
+x2  <- matrix(round(rnorm(n, mean = 3, sd = 1.5), digits=0), ncol = 2)
+x   <- rbind(x1, x2)
+```
+
+Note that the true (simulated) distribution is a mixture of two bivariate normal distributions. But because the points overlap, it is impossible to see it in the plot below.
+
+```{r}
+par(mfrow=c(1,3))
+plot(x, xlab="x", ylab="y", pch=19, col=4)
+```
+
+The *smoothScatter()* recovers the original shape to some extent.
+
+```{r}
+#| label: fig-smthscatter
+#| fig-cap: "Smoothed scatterplot for simulated data."
+smoothScatter(x, xlab="x", ylab="y")
+```
+
+In @fig-jitter below, we first jitter the data by a small amount ($a = 0.5$), then, in order to address the fact that there are 10,000 data points to be drawn, we used the *smoothScatter()* command.
+
+The resulting plot recovers the true shape of the original data (before rounding), and is not too crowded.
+
+```{r}
+#| label: fig-jitter
+#| fig-cap: "Jittered smoothed scatterplot for simulated data."
+smoothScatter(jitter(x,amount = 0.5), xlab="x", ylab="y")
+```
+
+We jittered the data by an amount greater than $d/5$, so the order of the points is not preserved. But, the added noise is random, so the overall properties of the data (shape and the means of the two mixture components) are not affected.
+
+:::
+
+
+## Q-Q plots {#sec-qqplots}
+
+Quantile-quantile (Q-Q) plots are an effective visual way to check whether two samples come from the same distribution. They can also be used in order to check if a data set is likely to follow a certain distribution, say the normal distribution.
+
+### Empirical Q-Q Plots {#sec-empqqplots}
+
+**Empirical (data) quantiles**. Let $X_1,\ldots, X_n$ be a random sample from some population with cumulative distribution function (c.d.f.) $F(x)$. Consider the proportions $p_i =(i-0.5)/n$. The $i$th empirical (data) quantile $Q_{E}(p_{i})$ corresponding to $p_i =(i-0.5)/n$ is the $i$th order statistic $X_{(i)}$, so that a proportion $p_i$ of the sample data lies below this value.
+
+**Empirical c.d.f.** Given the order statistics $X_{(i)}$ corresponding to a random sample of size $n$, the empirical c.d.f. $F_n(x)$ is defined as the proportion of sample observations that are $\le x$:
+
+$$
+F_n(x)=\begin{cases}
+0 & \text{ if } x < X_{(1)} \\
+i/n & \text{ if } X_{(i)} \leq x < X_{(i+1)} \\
+1 \text{ if } x > X_{(n)}.
+\end{cases}
+$$ {#eq-empcdf}
+
+The empirical c.d.f. is a step function with jumps at $X_{(i)},~i=1,\ldots,n$, each jump being of size $1/n$.
+
+Empirical quantile-quantile (Q-Q) plots are useful graphical tools that enable us to compare two data sets via their distribution functions. Plot the sample quantiles (or the quantiles of the empirical distribution) of one data against the corresponding quantiles (for the same proportion $p_i$) of the other. For example, the median and quartiles of one set are plotted against the median and quartiles of the second set.
+
+When both data sets have the same number of observations, the empirical Q-Q plot is easily obtained by plotting the order statistics (empirical quantiles) of one data against the order statistics (empirical quantiles) of the second data. 
+
+If the two samples have different sizes, interpolation is necessary to construct the plot.
+
+
+**Characteristics of the empirical Q-Q plot**
+
+1. If the two empirical distributions coincide, all of the points in the empirical Q-Q plot would lie exactly on the 45 degree line, $y = x$; otherwise, departures from this line provide information on how the two distributions differ.
+
+2. If the points lie on *any* straight line, the two data sets have the same shape. If the points show large, systematic departures from a straight line, the two data distributions differ in shape.
+
+We use the command *qqplot(x, y, plot.it = T, xlab, ylab)*.
+
+
+::: {#exm-exmcrabsEmpQQ}
+
+For example, use the [crabs]{style="color:green;"} data from @sec-ch2exmcrabmating. 
+The empirical Q-Q plot has no large systematic departures from a straight line, that the distribution of ***width*** is approximately the same for crabs in good and bad ***spine*** conditions.
+
+The empirical c.d.f. plot can also be used to show that overall, the two distributions are quite similar For that, we use the *ecdf()* function. The code used to produce the plots in @fig-0205 is listed here:
+
+```{r}
+#| label: fig-0205
+#| fig.cap: " Left: Empirical Q-Q plot of width for crabs with good and bad 
+#|  spine condition. Right: Empirical c.d.f. plots for the width in 
+#|   the two groups." 
+with(crabs, {
+  par(mfrow=c(1,2))
+  qqplot(width[spine=="good"], width[spine=="bad"], plot.it = TRUE, 
+         xlab= "good spine condition", ylab="bad spine condition", 
+         main="Empirical Q-Q plot", pch=19, col=3, axes=F )
+  axis(1); axis(2); grid()
+  plot(ecdf(width[spine=="good"]), col=4, main="Empirical c.d.f.s")
+  lines(ecdf(width[spine=="bad"]), col=2, pch=17)
+  legend("bottomright",c("good","bad"),col=c(4,2), pch=c(19,17),bty="n")
+  par(mfrow=c(1,1))
+})
+```
+
+Note that we have used the *axes=F* option to suppress the enclosing box of the Q-Q plot, and then added only the x and y axes by using *axis(1)* and *axis(2)*.
+
+:::
+
+
+### Dataset: CT towns {#sec-ch2exmCTtowna}
+
+The Connecticut Data Collaborative website contains many datasets about the State's demographic, economy, housing, health, safety, etc. We downloaded the total households by town for 2015-2019. 
+See <http://data.ctdata.org/dataset/total-households-by-town>.
+
+The rows correspond to towns. There are three columns: Town, Federal Information Processing Standards (FIPS) code, and Value - the total number of households in the town.
+
+```{r}
+CTtowns <- read.csv('Data/total-households-town-2019.csv', header=TRUE)
+```
+
+
+```{r}
+summary(CTtowns$Value)
+hist(CTtowns$Value)
+```
+
+
+### Normal Q-Q Plot {#sec-normalqq}
+
+The normal quantile-quantile (Q-Q) plot is routinely used for checking the assumption that a random data sample is generated from a normal population. It is a standard graphical feature in almost any statistical software.
+We plot the empirical quantiles of the sample data versus the corresponding theoretical quantiles from a standard normal distribution.
+
+
+::: {#exm-CTtownaNormalqq}
+
+To check whether number of households per town in the state of Connecticut has a normal distribution,
+use the  *car::qqPlot()* function to draw a normal Q-Q plot with a $95\%$ confidence interval.
+
+```{r, warning=FALSE}
+library("car")
+```
+
+In  @fig-hh1, empirical quantiles and the normal quantiles do not line up, which means that the number of households in towns in Connecticut are not normally distributed.
+
+```{r}
+#| label: fig-hh1
+#| fig.cap: "Normal Q-Q plot for the number of households in towns 
+#|  in Connecticut." 
+qqPlot(CTtowns$Value, main="", ylab="Households", cex=0.6,pch=19, col="red", 
+       col.lines = "orange")
+```
+
+
+However, after a log transformation, the points in the normal Q-Q plot lie very neatly along a straight line. 
+This means that the number of households very likely follows a log-normal distribution.
+The mean of the standard normal distributions ($0$) matches approximately $3.7$ in the distribution of the log-transformed (base 10) number of households. 
+This means that the *median* number of households in Connecticut is approximately 
+$10^{3.7}\approx 5000$.
+
+```{r}
+#| label: fig-hh2
+#| fig.cap: "Normal Q-Q plot for the log transformed number 
+#|  of households in towns in Connecticut." 
+qqPlot(log10(CTtowns$Value), main="", ylab="log10(Households)", cex=0.6, 
+       pch=19, col="green", col.lines = "lightblue")
+```
+
+
+**Normal Q-Q plot using ggplot2**
+
+See @fig-hhgg.
+
+```{r}
+#| label: fig-hhgg
+#| fig.cap: "Left: Normal Q-Q plot for the number of households in towns
+#| in Connecticut. Right: Normal Q-Q plot for the log transformed number 
+#|  of households in towns in Connecticut."  
+p1 <- ggplot(CTtowns, aes(sample=Value))+stat_qq(col="orange")+
+  stat_qq_line()+theme_light() + labs(y="Households",x = "Normal quantiles")+
+  ggtitle("A")
+p2 <- ggplot(CTtowns, aes(sample=log10(Value)))+
+  stat_qq(col="green")+stat_qq_line()+theme_light()+
+  labs(y="log10(Households)",x = "Normal quantiles")+
+  ggtitle("B")
+#library(gridExtra)
+grid.arrange(p1,p2,nrow=1)
+```
+
+:::
+
+
+
+
+**Details about the normal Q-Q plot**
+
+1. The **theoretical cumulative distribution function (c.d.f.)** of a continuous random variable $X$ is a continuous, nondecreasing function defined by
+
+$$
+F(x)=P (X \leq x) \quad \text{ for all real } x.
+$$ {#eq-cdf}
+
+Note that $0 \le F(x) \le 1$, and $P(a < X <b) = F(b) - F(a)$. 
+
+2. Let $Z$ be the **standard normal variable**, i.e.,$Z \sim N(0,1)$. The **c.d.f.** of $Z$ is denoted by $\Phi(z)$.
+
+3. The **probability density function (p.d.f.)** of a continuous random variable $X$ is a function $f(x)$ which assigns area to a small interval surrounding $x$. We can obtain the p.d.f. as
+
+$$
+f(x) =\frac{d}{dx}F(x).
+$$ {#eq-pdf}
+
+4. The **p.d.f. of a standard normal variable** $Z$ is denoted by $\phi(z)$.
+
+5. **Empirical quantiles** of a random sample are the ordered values, $X_{(1)} \le X_{(2 )}\le \ldots \le X_{(n)}$. They are denoted by $Q_E(p_i)$ corresponding to proportions $p_i =(i-0.5)/n$ for $i=1,\ldots,n$. 
+
+
+6. The **empirical c.d.f.** is a step function denoted by $F_n(x)$.
+
+
+
+
+![Patterns in normal Q-Q plots](Figures/qqplotpatterns.png)
+
+**Plot (a).** Suppose the $n$ points in the normal Q-Q plot lie approximately along the $y = x$ line (a straight line through the origin and with a slope of 1). Then, $F_n(x)$ matches $\Phi(z)$, and the data comes from a N(0,1) distribution.
+
+
+**Plots (b)-(d).** Suppose the $n$ points fall along the $y=c_{1}+c_{2}x$ line, where $c_1 \neq 0$ and $c_2 \neq 1$. Then, $F_n(x)$ matches the $N(c_{1}, c^2_{2})$ distribution.
+
+
+**Plot (e)** shows a straight line fit in the middle, but the ends curve upward on the right and downward on the left. This suggests a heavier-tailed (or longer-tailed) distribution than the normal distribution.
+
+**Plot (f).** Here, the plot curves upward in the left tail and downward in the right tail. This suggests the data having a lighter-tailed (or shorter-tailed) distribution than the normal distribution.
+
+**Plot (g).** The plot shows curvature in the right tail, suggesting a positively skewed $F_n(x)$.
+
+
+
+## Visualization of Qualitative Data {#sec-qualitative}
+
+We describe the pie diagram or pie chart for one qualitative variable followed by a segmented bar graph to represent two qualitative variables.
+
+### Pie Diagram {#sec-piediag}
+
+A pie chart or a pie diagram is often used to represent the frequency of each categorical data value as a percentage of the total number of observations.
+
+We construct a circle (which spans 360$^{\circ }$ at the center), then divide the circle into sectors, one for each distinct category value, with the size of any given sector being proportional to the percentage (or relative frequency) of that category.
+
+Note that the complete circle represents the total number of measurements. We determine the angle of each slice by multiplying the relative frequency by 360$^{\circ }$.
+
+
+
+::: {#exm-crabmatingpie}
+
+
+@fig-0208 shows the pie chart for the spine condition of the crabs.
+
+```{r}
+#| label: fig-0208  
+#| fig.cap: "Pie diagram showing the crabs categorized by spine condition."
+with(crabs, {
+  spinetable <- table(spine)
+  pie(spinetable, labels = rownames(spinetable), 
+      col=rainbow(length(spinetable)), main="")
+})
+```
+
+
+
+The spine condition for most of the crabs appears to be either worn or broken.
+
+Try *heat.colors(n), terrain.colors(n), topo.colors(n)*, and *colors(n)* instead of using the *rainbow* option. The command *colors()* returns the 657 color names available in R.
+
+The dot plot or the bar graph (below) are preferred by users over the pie chart.
+
+**Pie diagram using ggplot2**
+
+@fig-0208gg shows a pie diagram produced by the *ggplot2* package.
+
+```{r}
+#| label: fig-0208gg  
+#| fig.cap: "Pie diagram showing the crabs categorized by spine condition."
+spinetable <- data.frame(table(crabs$spine))
+colnames(spinetable) <- c("Spine","Count")
+ggplot(spinetable, aes(x = "", y = Count, fill = Spine)) +
+  geom_col() +
+  coord_polar(theta = "y")
+```
+
+:::
+
+
+
+### Barplots {#sec-barplot}
+
+A barplot or barchart is a simple graphical tool for visually summarizing qualitative data, i.e., data that may be classified into one of several, say $K$ categories.
+
+The *frequency* of each category is the number of measurements in that category.
+
+The *relative frequency* of each category is the proportion of data in that category, and is the the ratio of the frequency of the category to the total number of measurements.
+
+To construct a barchart, we show categories on the x-axis, place corresponding frequencies (or relative frequencies) on the y-axis, and construct vertical bars of equal width, one for each category. The height of a bar is proportional to the frequency (or relative frequency) of that category.
+
+There are many variations of the barchart, for instance, the bars may be displayed horizontally or vertically.
+
+
+
+::: {#exm-crabmatingbar}
+
+For the [crabs]{style="color:green;"} data, we show the distribution of the ***spine*** condition of the crabs as a bar chart, see @fig-extra.
+
+```{r}
+#| label: fig-extra
+#| fig.cap: "Barplot for the crabs data." 
+with(crabs, {
+  spinetable <- table(spine)
+  barplot(spinetable, beside = F, col=c("red","yellow","orange"), 
+          ylab = "Counts", main ="B")
+})
+```
+
+**Barplot using ggplot2**
+
+@fig-extragg constructs a barplot using *ggplot2*.
+
+```{r}
+#| label: fig-extragg
+#| fig.cap: "Barplot for the crabs data." 
+p<-ggplot(data=spinetable, aes(x=Count, y=Spine)) +
+  geom_bar(stat="identity",fill="steelblue") + coord_flip()
+p
+```
+
+:::
+
+
+### Dataset: Birdkeeping {#sec-ch2exmbirdkeeping}
+
+A 1972--1981 health survey in The Hague, The Netherlands, discovered an association between keeping pet birds and increased risk of lung cancer. Source: @RS13
+
+To investigate this, researchers conducted a case-control study in 1985 of patients at four hospitals in The Hague (population 450,000).
+They identified 49 cases of lung cancer among the patients who were registered with a general practice, who were aged 65 or younger and who had resided in the city since 1965.
+They also selected 98 controls from a population of residents having the same general age structure.
+They collected data on the variables
+
+***LC*** (an indicator whether the subject has lung cancer)
+
+***FM***, (an indicator for gender of the subject)
+
+***SS*** (socioeconomic status, determined by occupation of the household's principal wage earner)
+
+***BK*** (indicator of bird keeping)
+
+***AG*** (age of the subject in years)
+
+***YR*** (years of smoking prior to diagnosis or examination), and
+
+***CD*** (average rate of smoking in number of cigarettes per day).
+
+
+The [birdkeeping]{style="color:green;"} data is available in the R package *Sleuth3* as *case2002*.
+
+```{r, warning=FALSE}
+library(Sleuth3)
+```
+
+```{r}
+data(case2002)
+birds <- case2002
+birds$LC <- relevel(as.factor(birds$LC), ref = "NoCancer")
+str(birds)
+```
+
+The command *relevel(x, ref)* reorders the levels of the factor variable LC so that the level specified in *relevel()* becomes the reference or first level.
+
+
+
+### Spine Plots and Spinograms {#sec-spinogram}
+
+The relationship between two categorical variables can be explored using spine plots. For a spine plot, both quantities are approximated by the corresponding empirical relative frequencies. When x is numerical, *spineplot(x, y)* gives spinograms.
+
+For the spinogram, we first discretize x by using *hist()* with the *breaks* option, and then compute empirical relative frequencies. 
+Spinograms may be viewed as extended stacked histograms. 
+
+Spine plots may also be viewed as generalizations of stacked barplots, where the widths of the bars (and not their heights) correspond to the relative frequencies of x. The heights of the bars then correspond to the conditional relative frequencies of y in every x group. The partitions within the bars are the conditional relative frequencies of y in each x group which are labeled on the left axis and quantified on the right axis.
+
+To draw a spine plot, use the commands *spineplot(x,y)* or *spineplot(y*$\sim$x), where y is categorical and x can be categorical or numerical.
+
+::: {#exm-birdkeepingspine}
+
+We draw a spine plot to investigate whether bird keeping is related to lung cancer; see @fig-0209.
+
+```{r}
+#| label: fig-0209
+#| fig.cap: "Spine plot of bird keeping versus lung cancer." 
+with(birds, {
+  y <- table(LC, BK)
+  spineplot(y, col = c("pink","orange"), main=NA)
+})
+```
+
+The partitions within the bars are proportions of a given status of bird keeping having lung cancer or not. Individuals who have not kept birds are less prone to lung cancer.
+
+**Spineplot using ggplot2**
+
+@fig-0209gg uses the *ggplot2* package to produce a spineplot.
+
+
+```{=html}
+<!-- Note: The ggmosaic package uses tidyverse and that is why the warning arises.
+This seems to be a bug in the CRAN version of the package.
+If you use the developer version the warning disappears. 
+ 
+devtools::install_github("haleyjeppson/ggmosaic")
+-->
+```
+
+
+```{r, warning=FALSE}
+#devtools::install_github("haleyjeppson/ggmosaic")
+library(ggmosaic)
+```
+
+
+```{r}
+#| label: fig-0209gg
+#| fig.cap: "Spine plot of bird keeping versus lung cancer." 
+ggplot(data = birds) +
+  geom_mosaic(aes(x = product(BK, LC), fill=BK)) + labs(x = "LC", y = "BK") 
+```
+
+:::
+
+## Assessing Goodness of Fit {#sec-gof}
+
+We describe a significance tests for normality.
+We test $H_0$: data come from a normal distribution, while 
+$H_1$: data is not from a normal distribution. 
+Generally, no *specific* alternative data generating distribution is postulated under $H_1$.
+
+After rejecting $H_0$, we use graphical methods to see *how* the data departs from normality.
+
+Disadvantage of significance tests: if the sample size $n$ is large, the test may detect even trivial departures from $H_0$, misjudging a normal sample as non-normal!
+
+
+
+### Shapiro-Wilk test {#sec-ShapiroWilk}
+
+If the data are normal, the ordered observations $X_{(1)} \le X_{(2)} \le \ldots \le X_{(n)}$ should be linearly related to the means of an ordered sample from a standard normal distribution.
+
+The test statistic $SW$ is the ratio of two estimates of the variance of a normal distribution based on the sample data.
+If $SW$ is close to one, we assume data is normal.
+
+::: {#exm-CTtownaSWilk}
+
+```{r}
+# goodness of fit for CT towns data
+#library(stats)
+shapiro.test(log(CTtowns$Value))
+```
+
+:::
+
+
+
+### EDF tests for normality {#sec-KSgof}
+
+A class of tests called **EDF tests for normality** is based on the empirical c.d.f. function $F_n (x)$ of the random sample. This class is more general than the Shapiro-Wilk test because it can be used with any continuous distribution, not just normal.
+
+
+**Kolmogorov-Smirnov GOF test for normality**
+
+The KS GOF test statistic is the maximum vertical distance between $F_n (x)$ and the c.d.f. of a normal distribution with estimated mean $\overline{Y}$ and standard deviation $s$.
+We reject normality if the test statistic is large.
+
+::: {#exm-CTtownaEDFGOF}
+
+```{r}
+ks.test(log(CTtowns$Value), pnorm, mean(log(CTtowns$Value)),sd(log(CTtowns$Value)))
+```
+
+
+**Other EDF tests**
+
+We can also use the Anderson-Darling test and Cram{'e}r-von Mises tests for normality.
+
+```{r}
+library(nortest)
+ad.test(log(CTtowns$Value))
+cvm.test(log(CTtowns$Value))
+```
+
+:::
+
+### Chi-squared GOF test {#sec-chisqgof}
+
+This is useful for testing whether a data sample comes from a population with a specific distribution with known c.d.f. $F(x)$. The distribution can be continuous or discrete.
+
+
+1. Group the sample data into $k$ groups.
+
+2. Test $H_0$: the grouped sample data follows a multinomial distribution with $k$ categories versus 
+$H_1$: data do not follow the distribution specified under $H_0$.
+
+3. Calculate the expected frequencies corresponding to each of the $k$ groups under the multinomial distribution specified under $H_0$ as
+
+$$
+E_i = n p_i, \quad i=1,\ldots,k. 
+$$
+
+4. The chi-squared goodness-of-fit test statistic is
+
+$$
+\chi^2_{gof} = \sum_{i=1}^k \frac{(C_i - E_i)^2}{E_i},
+$$ {#eq-chisqgof}
+
+which follows an approximate $\chi^2_{k-r}$ distribution under some regularity conditions.
+Here, $r$ denotes the number of unknown parameters that must be estimated from the data. 
+A large test statistic $\chi^2_{gof}$ leads to rejection of the null hypothesis and the normality assumption.
+
+::: {#exm-CTtownachisqGOF}
+
+```{r}
+pearson.test(log(CTtowns$Value)) 
+```
+
+:::
+
+
+### Theoretical Q-Q plots {#sec-theorqqplots}
+
+A theoretical Q-Q plot graphically assesses whether the empirical data distribution $F_n(x)$ matches *any* user-specified theoretical probability distribution with c.d.f. $F(x)$ (not necessarily the standard normal c.d.f.).
+
+Plot the empirical quantiles $Q_{E}(p_{i})$ of the random sample (its order statistics) against the corresponding theoretical quantiles $Q_{T}(p_{i})$ from the hypothesized probability distribution $F(x)$.
+
+If $F(x)$ is a close approximation to $F_n(x)$, the data quantiles $Q_{E}(p_{i})$ should closely match the theoretical quantiles $Q_{T}(p_{i})$. Points in the plot should lie on, or reasonably close to, the $y=x$ line. 
+Departures of points from this line indicate lack of fit of $F(x)$ to the observed data.
+
+
+To illustrate, we can simulate data from other distributions such as a chi-squared distribution with $\nu$ d.f., or Student-$t$ distributions with different values for the d.f. $\nu$.
+
+1. Construct the normal Q-Q plot using *qqnorm()* or *car::qqPlot()* and look for evidence of departure from normality.
+
+2. Construct theoretical Q-Q plot corresponding to the generating distribution (instead of the normal distribution) using the R function *qqplot()*. 
+

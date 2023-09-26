@@ -1,0 +1,831 @@
+# Analysis of Variance (ANOVA) models {#sec-ch4anova}
+
+
+## Introduction {#sec-ch4intro}
+
+Analysis of Variance (ANOVA) models are useful to analyze data from designed experiments or observational studies to statistically compare more than two populations. An ANOVA model is a linear model which relates a continuous-valued response to effects due to different levels of categorical factors (treatments).
+
+**Designed experiments** are controlled studies in which one or more treatments are applied to experimental units or subjects in order to observe the effects of different levels of these treatments on a response variable of interest.
+
+**Observational studies** are when we observe the effects of different levels of treatments or other interventions without imposing any design. 
+
+ANOVA methods are generally more suitable to designed experiments.
+
+**Factors** are categorical explanatory variables consisting of at least two levels. We are interested in comparing the average responses at different levels of the factors.
+
+**Analysis of variance (ANOVA)** is a statistical method to compare the mean responses between $a$ different normal populations, all having the same variance.
+
+A one-factor ANOVA procedure can be regarded as an extension to $a >2$ populations of the pooled two-sample $t$-procedure
+
+The phrase *Analysis of Variance* is misleading. We are *not* estimating or testing variances in a linear model. Rather, we are making inference (estimation, test) about *mean effects using variance-like quantities*. Inference is based on the ratio between two estimates of the error variance, which are only equal if the means of all the groups are the same.
+
+**Experiments with a single factor**.
+
+The one-factor analysis of variance (ANOVA) model is described in @sec-onefacanova.
+
+(a) There is a single factor with $a$ levels.
+
+(b) The response is continuous-valued.
+
+(c) The one-factor ANOVA $F$-test compares whether all $a$ response means are equal.
+
+(d) If the means are unequal, multiple comparison procedures help determine which pairwise means are unequal.
+
+**Experiments with several factors**.
+
+When two or more factors are varied at different levels, and we seek to model their effects on a response variable, we have multi-factor or multi-way ANOVA models.
+
+We describe statistical analysis for two-factor models in @sec-ch4twofactor, again employing suitable $F$-tests.
+In a two-factor experiment, we can distinguish between an additive model and a model with an interaction between the two factors.
+
+Multi-factor experiments involving three or more factors are also widely used in many application domains, such as A/B testing.
+
+**Parametric versus Nonparametric Procedures**.
+
+The ANOVA $F$-test is a parametric procedure which is valid under certain assumptions.
+When one or more assumptions are violated by the data, nonparametric rank-based procedures can be used.
+
+
+
+## Datasets  {#sec-ch4datasets}
+
+### Dataset: 2010 Violent Crimes and State size {#sec-ch4exmvcrimeanova}
+
+We revisit the [U.S. violent crime]{style="color:green;"} data discussed in 
+@sec-ch3exmviolentcrime, also including information of state size.
+
+```{r, warning=FALSE, message=FALSE}
+library("readxl")
+```
+
+Read and process data on violent crimes for 2010.
+
+```{r}
+# read the 2010 crime data, and remove D.C.
+ViolentCrime2010 <- 
+   read_excel("Data/Violent Crime-by state-2010-table-5.xls",
+   sheet=1, range = "A4:M507", trim_ws = TRUE)
+colnames(ViolentCrime2010) = gsub("\n","_",colnames(ViolentCrime2010))
+States <- as.character(na.omit(ViolentCrime2010$State))
+States <- States[c(1:8,10:51)]
+# read the total violent crime numbers, and population sizes:
+VCrime2010 <- 
+  ViolentCrime2010$Violent_crime[which(ViolentCrime2010$Area == "State Total")]
+Population <- 
+  as.numeric(ViolentCrime2010$Population
+             [which(ViolentCrime2010$Area == "State Total")])
+```
+
+Use the *cut()* function to define a new variable called ***stateSize*** with $a=5$ levels based on the population quintiles (20, 40, 60, and 80 percentiles). Label them A to E.
+
+```{r}
+# Create a categorical variable with 5 levels of state sizes:
+stateSize <- cut(Population,breaks = 
+      quantile(Population,c(0,0.2,0.4,0.6,0.8,1)), right = T, 
+      include.lowest = T, labels = c("A","B","C","D","E"))
+```
+
+The *table()* command shows us that there are $n=10$ states in each level.
+
+```{r}
+table(stateSize)
+```
+
+We then create a data frame called *UScrime*, where the response variable $Y_{ij}$ is log(VCrime2010). This is similar to how we processed the data in @sec-ch3TwoSamp.
+
+```{r}
+UScrime <- data.frame(logCrime=log10(VCrime2010), Population, stateSize)
+```
+
+
+**Research question**: Does the number of violent crimes depend on the size of the state?
+
+
+### Dataset: Cycling {#sec-ch4exmcyclinganova}
+
+The [cycling]{style="color:green;"} data studies the effect of a program in Bihar, a state in India, which aimed to reduce the gender gap in secondary school enrollment. Girls who were scheduled to enroll in secondary school were provided bicycles, in the hope that it will facilitate getting to school and back in a timely manner, and therefore increase enrollment and graduation levels. The Government of Bihar provided funds for bicycles for 160,000 girls to be distributed in 2007--2008. Data collection took place around 18 months after the Cycle program was launched.
+
+The enrollment dataset contains $75,744$ observations. Of these, $61,920$ observations from Bihar, and $13,824$ from Jharkhand. We focus only on Bihar.
+The dataset contains 24 columns. Of these, we will use:
+
+***enrollment***,
+***female*** (indicator, 0 for male, 1 for female),
+***year***,
+***class*** (grade), and
+***statecode***.
+
+Other data files associated with this study are available online <https://nishithprakash.com/published-papers/>
+
+
+
+## One-factor analysis of variance (ANOVA) modeling {#sec-onefacanova}
+
+This is a linear model, where a single explanatory variable (Factor A) is categorical with $a$ levels.
+The continuous-valued response variable $Y$ is assumed to be have a normal distribution. The mean of $Y$ may be different under each of the $a$ levels of Factor A. Suppose the means are denoted by $\mu_1,\mu_2,\ldots,\mu_a$.
+Usually,
+
+$$
+\mu_i = \mu +\tau_i,~ \ i=1,\ldots,a;
+$$
+
+$\mu$: overall effect common to all $a$ levels,
+
+$\tau_i$: $i$th level-specific effect beyond $\mu$.
+
+
+**Notation**.
+
+Let $Y_{ij}$: number of violent crimes (observed response) in the $j$th state within the $i$th level of Factor A (***stateSize***), where $j=1,\ldots,10$ and $i=1,\ldots,5$.
+
+There are $n=10$ observations (replicates) for each level $i=1,\ldots,a$. The design is balanced. Let $N=an$. 
+
+In many examples, there are $n_i$ responses in level $i$, and $N=\sum_{i=1}^a n_i$. This design is unbalanced.
+
+The **one-factor ANOVA model** expresses $Y_{ij}$ as the sum of
+
+1. an overall mean parameter, $\mu$,
+
+2. an effect $\tau_i$ due to the $i$th level of Factor A, and
+
+3. random error $\epsilon_{ij}$. That is
+
+$$ 
+Y_{ij}=\mu+\tau_i + \epsilon_{ij}, \ j=1,2,\ldots,n_i, \ i=1,2,\ldots,a.
+$$ {#eq-onewayanovamodel}
+
+
+### Checking Model Assumptions {#sec-ch4onewayassump}
+
+In @eq-onewayanovamodel, we assume that $\epsilon_{ij}$ are i.i.d. N$(0,\sigma^2)$. 
+
+The ANOVA model assumptions are
+
+(a) independence,
+
+(b) equal variances (or, homoscedasticity), and
+
+(c) normality.
+
+Assumptions (a)-(c) imply that $Y_{ij}$ are mutually independent normal random variables with the same variance $\sigma^2$:
+
+$$
+Y_{ij} \sim N(\mu +\tau_i, \sigma^2),  \ j=1,\ldots, n_i, \ i=1,2,\ldots,a     
+$$ {#eq-distYij}
+
+
+
+::: {#exm-violentcrimeanova1}
+Look at the data visually. Then, fit a one-way ANOVA model.
+
+```{r, warning=FALSE,message=FALSE}
+library("BSDA")
+library("car")
+library(gridExtra)
+library(ggplot2)
+```
+
+Create boxplots of $Y_{ij}$ (***logCrime***) by level $i$ of Factor A (***stateSize***) to see whether the averages and spreads of the $a=5$ groups look different from one another.
+
+```{r}
+# Create boxplots by group using ggplot
+#pb <- ggplot(UScrime, aes(x=stateSize,  y=logCrime, fill=stateSize)) + geom_boxplot(show.legend = F)
+ggplot(UScrime, aes(x=stateSize,  y=logCrime, fill=stateSize)) + 
+   geom_boxplot(show.legend = F)
+```
+
+
+The **one-factor ANOVA** $F$-test enables us to check whether the mean responses are the same for the $a$ populations or not. The $a$ populations must be normal with equal variances.
+We will assess normality on the residuals from the fitted model (see below).
+
+The null hypothesis $H_0$ is
+
+$$
+H_{0}:\mu_1=\mu_2=\ldots=\mu_a
+$$ {#eq-onefactorH0}
+
+versus the alternative hypothesis
+
+$$
+H_{1}:  \mbox{ not all means } \mu_{i} \mbox{ are  equal}
+$$ {#eq-onefactorH1}
+
+or
+
+$$
+H_{1}:  \mbox{ at least one } \mu_{i} \mbox{ is different from the others.}
+$$ {#eq-onefactorH1a}
+
+Equivalently, we write the null and alternative hypotheses in terms of $\tau$ effects as
+
+$$
+H_{0}:   \tau_1=\tau_2=\ldots=\tau_a  
+$$ {#eq-onefactorH0b}
+
+versus
+
+$$
+H_{1}:\mbox{ not all treatment effects } \tau_{i} \mbox{ are  equal},
+$$ {#eq-onefactorH1b}
+
+or
+
+$$
+H_{1}:  \mbox{ at least one } \tau_{i} \mbox{ is different from the others.}
+$$ {#eq-onefactorH1c}
+
+Task 1: are $\mu_i$ (or $\tau_i$) different?
+
+Task 2: If different, which of the $a$ effects are different?
+
+Task 3: Does the data satisfy assumptions for using the parametric $F$-procedure?
+
+Task 4: If not, how can we the nonparametric Kruskal-Wallis procedure?
+
+
+Use the *aov()* function to fit the one-factor ANOVA model to ***logCrime***. 
+The *fitted()* command produces the fitted values $\hat{Y}_{ij}$.
+
+```{r}
+aovmod <- aov(logCrime ~ stateSize, data = UScrime)
+summary(lm(aovmod))
+aovfits <- fitted(aovmod)
+```
+
+**Residual**: difference between the observed and fitted responses:
+
+$$
+e_{ij} = Y_{ij} - \hat{Y}_{ij}
+$$ {#eq-anovaresid}
+
+
+Use the *residuals()* command. In linear models, we check the model assumptions on the residuals. 
+
+```{r}
+aovres <- residuals(aovmod)
+```
+
+
+
+**Check normality assumption**
+
+In the normal Q-Q plot of the residuals using the *car::qqPlot()* function, the residuals seem to fall along a straight line.
+
+```{r}
+car::qqPlot(aovres, main = NA, pch = 19, col = 2, cex = 0.7)
+```
+
+The large $p$-value (much greater than $0.05$) from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
+
+```{r}
+shapiro.test(aovres)
+```
+
+
+**Check equal variances assumption**
+
+Levene's test helps test the assumption of equal variances,
+
+$$
+H_0: \sigma^2_1 = \sigma^2_2 = \ldots = \sigma^2_a = \sigma \text{ (say)}.
+$$
+
+Unlike Bartlett's test, which also tests whether the $a$ variances are equal, Levene's test is more robust to departures from normality of the responses (and residuals).
+
+```{r}
+#Levene's test to check equal variance assumption 
+leveneTest(logCrime ~ stateSize, data = UScrime)
+```
+
+The large $p$-value supports the assumption of equal variances in the $a$ groups. 
+
+
+We can also check the equal variance assumption graphically by the **spread versus level plot**. Useful when the number of groups $a$ is moderate to large.
+Assume that the underlying distributions of the response in the $a$ groups have similar shapes, but they have different levels (logarithms of their medians $\log(\mbox{M}_i)$) and spreads (logarithms of the interquartile range $\log(\mbox{IQR})_i$).
+
+Plot $\log(\mbox{IQR})_i$ versus $\log(\mbox{M}_i)$ for $i=1,\ldots,a$.
+
+1.  If the slope of this line is zero (horizontal line), the spreads do not change with levels.
+
+2.  A positive (or negative) slope indicates that the spreads increase (or decrease) with the levels.
+
+```{r}
+spreadLevelPlot(UScrime$logCrime,  by=stateSize)
+```
+
+:::
+
+### ANOVA Decomposition and the $F$-test {#sec-ch4onewayFtest}
+
+
+::: {#exm-violentcrimeanova2}
+From a summary of the *aov()* model fitting, see the ANOVA table and the $F$-statistic:
+
+```{r}
+summary(aovmod) # model summary
+```
+
+:::
+
+The ANOVA decomposition consists of partitioning the total variability in the response $Y$ into
+
+(a) the *between-group* or between-treatment, or between levels variation of Factor A, denoted by  SSA, and
+
+(b) the *within-group* or due to error (residual) variation SSE:
+
+$$
+{\rm SST}= {\rm SSA} + {\rm SSE}.
+$$ {#eq-anovadecomp}
+
+SST is the Total Sum of Squares defined as
+
+$$
+{\rm SST} = \sum^a_{i=1} \sum^{n_i}_{j=1} (Y_{ij} - \overline{Y}_{\cdot \cdot})^2,  \text{ with } (N-1) \text{ d.f.}
+$$
+
+SSA is the Sum of Squares due to Factor A,
+
+$$
+{\rm SSA} = \sum^a_{i=1} n_i (\overline{Y}_{i \cdot} -\overline{Y}_{\cdot \cdot})^2, \text{ with } (a-1) \text{ d.f.}
+$$
+
+SSE is the Sum of Squares due to Error (Residual),
+
+$$
+{\rm SSE} = \sum^a_{i=1} \sum^{n_i}_{j=1}(Y_{ij}-\overline{Y}_{i \cdot})^2, \text{ with } (N-a) \text{ d.f.}
+$$
+
+MSA is the treatment mean square,
+
+$$
+{\rm MSA} =\frac{{\rm SSA}}{a-1},
+$$
+
+MSE is the error (or, residual) mean square
+
+$$
+{\rm MSE} = \frac{\rm SSE}{N-a}.
+$$
+
+The one-factor ANOVA $F$-statistic is
+
+$$     
+F=\frac{{\rm MSA}} {\rm MSE}.
+$$ {#eq-onewayFstat}
+
+
+These are summarized in the ANOVA table @tbl-tab0403.
+
+|Source  | DF| Sums of Squares| Mean Squares| $F$-stat |Prob $>F$|
+|--------|:---|:--------------|:------------|:---------|:--------|
+|Model   | $a-1$|  SSA | MSA | $F=\frac{\text{MSA}}{\text{MSE}}$ | $p$-value|
+|Error   |$N-a$  |SSE |  MSE  |   | |
+|Corrected Total|  $N-1$  | SST  |      | | |
+
+: Analysis of Variance (ANOVA) Table for One-way Model {#tbl-tab0403} 
+
+
+
+Provided $H_0$ is true, $F \sim F_{a-1, N-a}$, i.e., an $F$-distribution with numerator d.f. $a-1$ and denominator d.f. $N-a$.
+We can use the $F$-critical value to reject the null hypothesis $H_0$ if
+
+$$
+F  \geq    F_{1-\alpha, a-1, N-a}
+$$ {#eq-anovaFcrit}
+
+Or, we can use the observed $p$-value and reject the null hypothesis $H_0$ if
+
+$$
+ \mbox{p-value} =  P(F_{a-1, N-a} \geq F) \leq \alpha,   
+$$ {#eq-anovapvalue}
+
+where $\alpha$ is a prespecified level of significance (say, $0.05$).
+
+If the data does not provide evidence to reject $H_0$, we conclude that the levels of the factor have no effect on the response means, and the means of $Y$ are the same at all levels of Factor A.
+
+
+**Inference about individual means**
+
+The $95\%$ confidence interval for $\mu_i$ is given by
+
+$$
+\hat{\mu}_i \pm t_{0.975, N-a} \frac{\hat{\sigma}}{\sqrt{n_i}}
+= \overline{Y}_{i\cdot} \pm t_{0.975, N-a} \frac{ \sqrt{\rm MSE} }{ \sqrt{n_i}},   
+$$ {#eq-anovaindmeans}
+
+where,  $\overline{Y}_{i\cdot}$ is the sample mean of responses in level $i$. The marginal 95\% interval for $\mu_i$ can help us test $H_0: \mu_i = 0$.
+
+
+While @eq-anovaindmeans gives 95\% coverage for each mean $\mu_i$, it does not give
+95\% coverage for all $a$ means considered together.
+
+```{r}
+pred.stateSize <- expand.grid(stateSize=unique(UScrime$stateSize))
+lsmeans <- predict(aovmod, newdata=pred.stateSize, se=TRUE, interval="confidence")
+cbind(pred.stateSize, lsmeans$fit)
+```
+
+**Pairwise comparison of means**
+
+Suppose the overall $F$-test rejects $H_0$: all the treatment effects are equal. 
+There is evidence that at least some of the $\binom{a}{2} = a(a-1)/2$ pairs of means are significantly different. 
+The side-by-side boxplots also imply that the number of violent crimes may be very different for any pair of groups. 
+
+However, *which* pairs of means are different?
+Finding such pairs requires testing equality of each of the $a(a-1)/2$ pairs. 
+We can test each pair at the 5\% level using the 
+*pairwise.t.test()* function.
+
+
+```{r}
+pairwise.t.test(UScrime$logCrime, UScrime$stateSize, 
+                p.adjust.method = "none")
+```
+
+
+This question leads us to the topic of multiple comparisons.
+
+
+
+### Multiple Comparsions {#sec-numtcomp}
+
+Suppose the overall $F$-test rejects $H_0$: all the treatment effects are equal, so there is evidence that at least some of the $\binom{a}{2} = a(a-1)/2$ pairs of means are significantly different. But, the $F$-test cannot tell us *which* factor levels are different.
+
+The boxplots imply that the number of violent crimes may be very different for any pair of groups. Finding such pairs requires testing equality for each pair. 
+Multiple comparison procedures enable us to see which of the $a$ means are different, while *controlling the probability of false positives*. 
+Recall that Type I error, also known as a false positive (FP), is the incorrect rejection of a true null hypothesis.
+
+
+**What does P(Type I error) control mean?**
+
+For example, suppose we conduct independent tests on $m=200$ null hypotheses $H_0$, each at the same significance level $\alpha=0.05$. Suppose at least half of these, i.e., $100$ are true nulls. The probability of at least one FP is
+
+$$ 
+  P(\text{at least one FP})
+  = 1-P(\text{no FP in the tests on the true nulls})
+$$ 
+
+which is
+
+$$  
+\ge 
+ 1-P(\text{no FP in the test on the first true null})^{100} = 1-(1-\alpha)^{100} = 0.994. 
+$$
+
+This value is too high! We want this to be at 0.05. 
+Solving $1-(1-\alpha)^{100} \ge 0.05$ gives that $\alpha$ has to be less than 
+$5.13 \times 10^{-4}$. Such a small significance level makes it difficult to reject any false nulls, resulting in lower power of testing.
+
+Thus, balancing Type I error control and power requires more than just adjusting a single significance level $\alpha$.
+In high-throughput domains such as genomics or business, several thousand (or even more) statistical tests are performed, and multiple testing is like finding needles in a haystack. It becomes critical to get a good trade-off between Type I error control and power.
+
+Several procedures have been specifically designed to offer such a trade-off. We discuss two procedures below.
+
+**Tukey's Procedure.**
+
+To perform all pairwise comparisons of the five means, Tukey's Honest Significant Difference (HSD) post-hoc test is useful.
+
+Idea: if we determine a critical value for the difference between the largest and the smallest sample means, then any other pair of sample means that differ by at least this critical value would also imply a difference in the corresponding level means.
+
+```{r}
+#pairwise comparisons Tukey's HSD test
+TukeyHSD(aovmod)
+```
+
+At the $5\%$ level, only the comparison between levels C and D is not significant, after accounting for multiple testing.
+
+All other comparisons show positive differences (see the boxplots - violent crimes increase as the state size increases.
+See the row E-A. The difference in means on the log scale is $1.466$ between the ten largest states (level E) and the ten smallest states (level A). That is,
+
+$$
+\log_{10}(y_E)-\log_{10}(y_A)=\log_{10}(y_E/y_A)=1.466.
+$$
+
+Transform back to the original scale, then
+
+$$
+y_E/y_A=10^{1.466}=29.2,
+$$
+
+i.e., the number of violent crimes in the ten largest states is 29 times greater than in the ten smallest states.
+
+
+**Bonferroni Procedure.**
+
+This procedure requires fewer assumptions than Tukey's method, but is more conservative (meaning that it yields $p$-values which are greater than or equal to ones produced by Tukey's adjustment).
+
+To use the Bonferroni method, we use the *pairwise.t.test()* function.
+
+```{r}
+# All pairs, Bonferroni multiple comparison correction
+pairwise.t.test(UScrime$logCrime, UScrime$stateSize, 
+            p.adjust.method = "bonf")
+```
+
+
+The output table shows the Bonferroni adjusted $p$-value for comparing each pair. Thus, A and B are significantly different, while C and D are not.
+
+
+### Nonparametric One-factor ANOVA Modeling {#sec-KWtest}
+
+Suppose the data do not satisfy the ANOVA assumptions of normality and equal variance. Instead of the parametric $F$-stat procedure, we can use a nonparametric procedure called the Kruskal-Wallis procedure. This is an extension of the two-sample Wilcoxon rank-sum procedure, just like the ANOVA $F$-test is an extension of the two-sample pooled  $t$-procedure.
+
+Here, the null hypothesis is
+
+$$
+H_0: \text{the } a \text{ level effects have identical distributions}
+$$
+
+versus
+
+$$
+H_1: \text{not all the } a \text{ level effects are the same.}
+$$
+
+```{r}
+# Kruskal-Wallis nonparametric procedure
+kruskal.test(logCrime ~ stateSize, data = UScrime)
+```
+
+The very small $p$-value means the data rejects $H_0$ and concludes that the effects are different. The result is qualitatively the same as the 
+ANOVA $F$-test. The details of the KW test are:
+
+
+1. First, rank the observations $Y_{ij},~j=1,\ldots,n_{i},~i=1,\ldots,a$ in ascending order.
+
+2. Then, replace each $Y_{ij}$ by its rank, say $R_{ij}$.
+
+3. Let $R_{i\cdot }$ be the sum of the ranks under the $i$th treatment (assume no ties).
+
+4. The Kruskal-Wallis test statistic is
+
+$$
+KW=\frac{12}{N(N+1)}\sum_{i=1}^{a}\frac{R_{i\cdot }^{2}}{n_{i}}-3(N+1).
+$$ {#eq-kw3}
+
+
+If the $n$ are reasonably large (i.e., $n \geq 5$, say), then $KW$ has an approximate chi-square distribution with $a-1$ d.f. if $H_0$ is true (null distribution of $KW$).
+
+If $KW >\chi_{a-1,\alpha}^{2}$, we reject $H_0$ at level of significance $\alpha$.
+
+
+
+
+## Two-Factor Models {#sec-ch4twofactor}
+
+::: {#exm-cycling}
+
+We look at the [cycling]{style="color:green;"} data which 
+studies the effect of a program in Bihar, a state in India, with the aim to reduce the gender gap in secondary school enrollment. 
+Here, we consider two factors:
+
+Factor A is ***gender*** with $a=2$ levels, and
+
+Factor B is  ***year *** with $b=4$ levels, corresponding to four years (14-17) prior to program launch).
+
+The interaction between the two factors is of interest. If there is significant interaction, then the rate of change in enrollment for girls is not the same as that for boys, and thus may be attributed to the Cycle program.
+
+:::
+
+We source the packages used below, and read the data.
+
+```{r, warning=FALSE,message=FALSE}
+library(haven) # to import data from Stata
+```
+
+
+```{r}
+lenrolldat <- data.frame(read_dta("Data/bh_enroll_data_reg.dta"))
+```
+
+
+We take the logarithm of the enrollment as the response, because the population base is different in the two provinces. 
+We convert the ***female*** and ***year*** variables to factors.
+The total number of observations in the data frame is 20,266.
+
+
+```{r}
+# some preprocessing
+lenrolldat$lenrollment <- log(lenrolldat$enrollment)
+# converting female and year to be factors:
+lenrolldat$female <- as.factor(lenrolldat$female)
+lenrolldat$n_year <- as.factor(lenrolldat$year - 2002)
+# We can also define a treated/control indicator
+#lenrolldat$treated <- as.factor(lenrolldat$year > 2005)
+```
+
+
+We restrict the dataset to the Bihar province (state code =1) and to students entering ninth grade in the years 2003-2006.
+Finally, we exclude any NA or -infinite enrollment values.
+
+```{r}
+# We treat year as numeric, with values 1,2,3,4
+# lenrolldat$n_year <- lenrolldat$year - 2002
+# Use only a subset, from grade 9, in Bihar (statecode=1), 
+#     such that the enrollment value is finite and not missing
+dat_table1 <- lenrolldat[which(lenrolldat$class==9 & lenrolldat$statecode ==1 &  !is.na(lenrolldat$lenrollment) & lenrolldat$lenrollment > -Inf),]
+```
+
+**Research question.** Did girls' enrollment in secondary school in Bihar increase as a result of the program which provided bicycles? 
+
+An experiment or observational study can have two factors, Factor A at $a$ levels, and Factor B at $b$ levels. Assume that we can observe the response $Y$ at all possible combinations of the $a$ levels of Factor A and $b$ levels of Factor B, denoted by $Y_{ij}$ in the $(i,j)$th combination, for $i=1,\ldots,a$ and $j=1,\ldots,b$.
+
+In some experiments, the difference in response between the levels of Factor A is not the same at all levels of Factor B (or vice versa). In this case, we say there is an *interaction* between the two factors, and an adequate model must represent this feature.
+
+
+### Two-factor model with interaction {#sec-ch4twofacinter}
+
+Assuming an interaction between the factor levels, we model the response $Y$ as follows:
+
+$$
+Y_{ij\ell}=\mu+\tau_i+\beta_j+(\tau \beta)_{ij}+\epsilon_{ij\ell}, \
+\ell=1,\ldots,n, \ i=1,\ldots,a, \ j=1,\ldots,b,
+$$ {#eq-2facmodel}
+
+$\mu$ is the overall mean effect,
+
+$\tau_i$ is the effect due to the $i$th level of Factor A,
+
+$\beta_j$ is the effect due to the $j$th level of Factor B,
+
+$(\tau \beta)_{ij}$ is the effect due to the interaction between the $i$th level of Factor A and the $j$th level of Factor B, and
+
+$\epsilon_{ij\ell}$ are i.i.d. $N(0,\sigma^{2})$ variables.
+
+The total number of model parameters is $p=1+a+b+ab$.
+
+There are $n$ replicates in each of the $ab$ cells.
+
+The total number of observations is $N=nab$.
+
+Mean response in the $(i,j)$th cell:
+
+$$
+\mu_{ij}=\mu+\tau_i+\beta_j+(\tau \beta)_{ij},
+$$
+
+Interpret the interaction effect as
+
+$$
+(\tau \beta)_{ij}=\mu_{ij}-\mu -\tau_i-\beta_j.
+$$
+
+### Least squares solutions of coefficients {#sec-2faccoeffs}
+
+Fit @eq-2facmodel using the *lm()* function:
+
+```{r}
+panelA <- lm(lenrollment ~ female*n_year, data = dat_table1)
+summary(panelA)
+```
+The output above shows least squares solutions for $\mu$, $\tau_i$, 
+$\beta_j$, and $(\tau \beta)_{ij}$. The $p$-values based on marginal $t$-tests indicate significant coefficients. 
+
+For  multiple testing of coefficients, use Tukey's procedure via the *lsmeans()* function in the *emmeans* package.
+
+```{r, warning=FALSE}
+library(emmeans) 
+```
+
+```{r}
+marginal <- lsmeans(panelA, pairwise ~ female:n_year, adjust="tukey")
+marginal$contrasts
+```
+At the 5\% level, all the comparisons are significant. 
+
+For example, the difference in enrollment for girls between year 1 and year 4 appears in the line which starts with '1 1 - 1 4', and the value is -0.43 (an increase of 0.43 if we subtract year 1 from year 4.), 
+
+For the boys, the change from year 1 to year 4 is denoted by '0 1 - 0 4', and it is -0.25. So, enrollment went up for both groups, but more so for girls.
+
+
+### Interaction plot {#sec-2facinterplot}
+
+Use the  *interactionMeans()* function in the *phia* package to get plots 
+in @fig-interpanelA of the interaction between Factor A and Factor B.
+
+```{r, warning=FALSE}
+library(phia) 
+```
+
+```{r}
+#| label: fig-interpanelA
+#| fig.cap: "Effects interaction plot for the cycling data"
+IM <- interactionMeans(panelA)
+plot(IM)
+```
+
+
+Top-left plot: shows overall difference in log-enrollment between girls and boys. Enrollment for boys is much higher. 
+
+Top-right plot: shows change in enrollment over years for boys (black-solid line) and girls (dashed-red).The difference between genders decreases over time.
+
+Lower-left plot: gender is on the x-axis; the difference between boys and girls has decreased from year 1 to year 4. 
+
+Bottom-right plot: shows the overall difference between years. Considering the two cohorts together, there is a steady increase in enrollment.
+
+
+
+
+### ANOVA decomposition {#sec-2facanovadecomp}
+
+The ANOVA table reflects partition of the total variability in $Y$ as
+
+$$
+{\rm SST} = {\rm SSA} + {\rm SSB} +{\rm SSAB} +  {\rm SSE},
+$$ {#eq-1465}
+
+
+and is obtained as follows:
+
+
+```{r}
+summary(aov(panelA))
+```
+
+
+In @eq-1465,
+
+$$
+SST  =  \sum^a_{i=1} \sum^b_{j=1}\sum^n_{\ell=1}(Y_{ij\ell}-\overline{Y}_{\cdot \cdot \cdot})^2,
+$$
+
+$$
+SSA = bn\sum^a_{i=1}(\overline{Y}_{i\cdot \cdot}-\overline{Y}_{\cdot \cdot \cdot})^2,
+$$
+
+$$
+SSB =  an\sum^b_{j=1}(\overline{Y}_{\cdot j\cdot}-\overline{Y}_{\cdot \cdot \cdot})^2,
+$$
+
+$$
+SSAB  =   n\sum^a_{i=1}\sum^b_{j=1} (\overline{Y}_{ij\cdot}-\overline{Y}_{i\cdot \cdot} 
+-\overline{Y}_{\cdot j\cdot}+\overline{Y}_{\cdot \cdot \cdot})^2,
+$$
+
+and
+
+$$
+SSE =   \sum^a_{i=1}\sum^b_{j=1}\sum^n_{\ell=1}(Y_{ij\ell}-\overline{Y}_{ij\cdot})^2.  
+$$
+
+The form of the ANOVA table is shown in @tbl-2wayanovaint
+
+| Source | DF           | SS   | MS                                       | $F_0$                      |
+|---------------|:--------------|:--------------|:--------------|:--------------|
+| A      | $a-1$        | SSA  | MSA$=\frac{\rm SSA}{a-1}$                | $\frac{\rm MSA}{\rm MSE}$  |
+| B      | $b-1$        | SSB  | MSB$=\frac{\rm SSB}{b-1}$                | $\frac{\rm MSB}{\rm MSE}$  |
+| AB     | $(a-1)(b-1)$ | SSAB | ${\rm MSAB}=\frac{\rm SSAB}{(a-1)(b-1)}$ | $\frac{\rm MSAB}{\rm MSE}$ |
+| Error  | $ab(n-1)$    | SSE  | MSE$=\frac{\rm SSE}{ab(n-1)}$            |                            |
+| Total  | $abn-1$      | SST  |                                          |                            |
+
+: ANOVA table for a two-factor model with interaction {#tbl-2wayanovaint}
+
+
+The mean squares MSA, MSB, MSAB, and MSE are obtained by dividing the respective sums of squares by the corresponding d.f.
+
+
+### Testing interaction and main effects {#sec-2factests}
+
+The forms of the $F$-test statistics for the different hypotheses are the corresponding MS in the above table divided by MSE.
+For each case, @tbl-2facFtests shows the hypothesis, the test statistic, and its  sampling distribution under $H_0$.
+
+
+| Hypotheses| Test statistic | Null distribution         |
+|------------------|:-----------------------|:-----------------------------|
+|$H_{AB}:(\tau \beta)_{ij}=0 \forall \ i,j$ versus at least one $(\tau \beta)_{ij}$ is $0$| $F_{AB}=\frac{SS_{AB}/(a-1)(b-1)}{SSE/ab(n-1)}$ | $F_{(a-1)(b-1),ab(n-1)}$|
+|$H_B:\beta_j+ \sum_{i=1}^a (\tau \beta)_{ij}/a$ equal $\forall j$|$F_{B}=\frac{SS_{B}/(b-1)}{SSE/ab(n-1)}$|$F_{(b-1),ab(n-1)}$|                     
+|$H_{A}:\tau _i+\sum_{j=1}^b (\tau \beta)_{ij}/b$ equal $\forall i$| $F_{A}=\frac{SS_{A}/(a-1)}{SSE/ab(n-1)}$| $F_{(a-1),ab(n-1)}$|
+
+: $F$-tests in a two-factor model with interaction {#tbl-2facFtests}
+
+
+
+1.  We first test for no interaction effects $H_{AB}$.
+
+If the $F$-statistic $F_{AB} > F_{(a-1)(b-1), ab(n-1),0.95}$, we reject $H_{AB}$ at the $5\%$ level of significance, and conclude that there is a significant interaction effect between some level(s) Factor A and some level(s) of Factor B.
+Thus, the data prefers the model in @eq-2facmodel over the  *additive model* 
+given by
+
+$$
+Y_{ij\ell} = \mu_{ij} + \epsilon_{ij\ell} = \mu+\tau_i+\beta_j +  \epsilon_{ij\ell},
+$$ {#eq-ch4twofacadd}
+
+which we will fit using this code:
+
+```{r, eval=FALSE}
+# Additive Model
+add.model <- lm(lenrollment~female+n_year, data = dat_table1)
+```
+
+
+The interaction term is significant, with a $p$-value of 5.32e-05. So, we will use the full model @eq-2facmodel.
+
+
+2.  Following the rejection decision from testing $H_{AB}$, we next test $H_B$. It is important to note that this *does not* imply testing $\beta_{1}=\ldots=\beta_{b}$; we are testing whether the effects due to the levels of Factor B are equal, *averaged over all levels of Factor A*.  
+From the ANOVA table output, Factor B main effect is significant with a
+$p$-value $<$ 2e-16.
+
+
+3.  Similarly, $H_A$ tests whether effects due to the levels of Factor A are equal, averaged over all levels of Factor B.
+Factor A main effect is significant with a $p$-value $<$ 2e-16.
+
+

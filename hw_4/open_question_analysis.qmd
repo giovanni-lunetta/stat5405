@@ -1,5 +1,27 @@
+---
+title: "Stat5405 Homework 4 Open Question"
+author: "Giovanni Lunetta"
+date: "September 27, 2023"
+format: html
+embed-resources: true
+theme: cosmo
+code-line-numbers: true
+number_examples: true
+number_section: true
+number_chapters: true
+linkcolor: blue
+editor: visual
+fig-cap-location: top
+---
+
 **Q4. Open question. Not graded for credit.**
 Choose an application domain that interests you. Find/download an interesting data set in this domain which lends to analysis using one-factor or two-factor ANOVA analysis. Carry out a comprehensive analysis (testing assumptions, testing a suitable hypothesis, estimating effects etc.). Summarize as a report. You can share this on Discussion Board, and include on your Github page. 
+
+Overview:
+
+The National Basketball Association (NBA) is a men’s professional basketball league in North America. The league is composed of 30 teams (29 in the United States and 1 in Canada) and is one of the four major professional sports leagues in the United States and Canada. The NBA is an active member of USA Basketball (USAB), which is recognized by FIBA (also known as the International Basketball Federation) as the national governing body for basketball in the United States. The NBA is one of the four major professional sports leagues in the United States and Canada. NBA players are the world’s best paid athletes by average annual salary per player.
+
+In this analysis, we are interested in exploring the relationship between team pace and the division that a team belongs to. Team pace is a basketball statistic that estimates the number of possessions per 48 minutes by a team. A possession is defined as the time a team has the ball until it scores, misses a shot, commits a turnover, or commits a foul that is not a shooting foul. The division that a team belongs to is a categorical variable that indicates the division that a team belongs to. There are five divisions in the NBA: Atlantic, Central, Southeast, Northwest, Pacific, and Southwest.
 
 ```{r}
 library(dplyr)

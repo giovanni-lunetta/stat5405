@@ -1,7 +1,7 @@
 ---
 title: "Stat5405 Homework 4"
 author: "Giovanni Lunetta"
-date: "September 25, 2023"
+date: "September 27, 2023"
 format: html
 embed-resources: true
 theme: cosmo
@@ -131,9 +131,9 @@ The large $p$-value (much greater than 0.05) from the Levene significance test f
 effects(anova_model)
 ```
 
-Interpretation of Results:
-
-The output table shows the effects of the levels of CWP. The first row shows the effect of the first level of CWP (15), the second row shows the effect of the second level of CWP (20), and so on. The last row shows the effect of the fifth level of CWP (35). The effects are the differences between the mean tensile strength for each level of CWP and the overall mean tensile strength. The overall mean tensile strength is 5.5. The effects are 0.5, 0.5, 1.5, 2.5, and 1.5 for the first, second, third, fourth, and fifth levels of CWP, respectively. This means that the mean tensile strength for the first level of CWP (15) is 0.5 higher than the overall mean tensile strength, the mean tensile strength for the second level of CWP (20) is 0.5 higher than the overall mean tensile strength, and so on. The effect of the third level of CWP (25) is 1.5 higher than the overall mean tensile strength, and the effect of the fourth level of CWP (30) is 2.5 higher than the overall mean tensile strength. The effect of the fifth level of CWP (35) is 1.5 higher than the overall mean tensile strength. This suggests that the mean tensile strength increases as the level of CWP increases from 15 to 30, and then decreases as the level of CWP increases from 30 to 35.
+```{r}
+spreadLevelPlot(tensile$Tensile_Strength, by=tensile$CWP, main="Spread Level Plot")
+```
 
 (b) 
 Obtain point estimates, and 95\% C.I. estimates of the true means $\mu_i$ of the five groups.
@@ -172,7 +172,7 @@ print(pairwise_results)
 
 Interpretation of Results:
 
-The output table shows the Bonferroni adjusted $p$-value for comparing each pair. Thus, 15 and 25, 15 and 30, 20 and 35, 25 and 35 and 30 and 35 are significantly different, while the rest are not.
+The output table shows the Bonferroni adjusted $p$-value for comparing each pair. Thus, 15-25, 15-30, 20-30, 25-35 and 30-35 are significantly different, while the rest are not.
 
 (d)
 Use the Tukey multiple comparison procedures to conduct pairwise tests of equality of the group means. Interpret the results.
@@ -195,20 +195,20 @@ Interpretation of Results:
 
 Based on the TukeyHSD results and at a 5% significance level, we can interpret the results as follows:
 
-The comparisons between levels 15 and 20, 15 and 25, 15 and 30, 25 and 35, and 30 and 35 are significant after accounting for multiple testing, as their adjusted p-values are less than 0.05. This implies that there are significant differences in the means of Tensile Strength between these pairs of CWP levels.
-
-However, the comparisons between levels 20 and 25, 20 and 30, 20 and 35, 25 and 30, and 15 and 35 are not significant at the 5% level after accounting for multiple testing, as their adjusted p-values are greater than 0.05. This means there is insufficient evidence to conclude that there are significant differences in the means of Tensile Strength between these pairs of CWP levels.
+The comparisons between levels 35-15, 25-20, 35-20, and 30-25 are the only pairs that are not significantly different. Therefore, the rest are statistically significant after accounting for multiple testing, as their adjusted p-values are less than 0.05. This implies that there are significant differences in the means of Tensile Strength between these pairs of CWP levels.
 
 (e) Compute and interpret a suitable effect size to see whether the levels of ***CWP*** have a practically meaningful effect on tensile strength.
 ```{r}
 # Calculate eta squared
-SSB <- sum(anova_model$effects[-1]^2)  # Sum of squares between groups
+SSB <- sum(anova_model$effects^2)  # Sum of squares between groups
 SST <- sum(anova_model$residuals^2) + SSB  # Total sum of squares
 eta_squared <- SSB / SST  # Eta squared
+print(SSB)
+print(SST)
 print(eta_squared)
 ```
 
-The $\eta^2$ value of approximately 0.798 suggests that approximately 79.8% of the variability in the Tensile Strength can be explained by the different levels of CWP. This is considered a large effect size, indicating that the levels of CWP have a practically meaningful and substantial effect on tensile strength. In practical terms, this implies that changes in CWP levels are associated with significant changes in tensile strength, and understanding or controlling CWP levels can be crucial for managing tensile strength effectively.
+The $\eta^2$ value of approximately 0.975 suggests that approximately 97.5% of the variability in the Tensile Strength can be explained by the different levels of CWP. This is considered a large effect size, indicating that the levels of CWP have a practically meaningful and substantial effect on tensile strength. In practical terms, this implies that changes in CWP levels are associated with significant changes in tensile strength, and understanding or controlling CWP levels can be crucial for managing tensile strength effectively.
 
 **Q3. (50 points)**
 Consider the ToothGrowth dataset from the R package *datasets*. The response is ***len***, the length of odontoblasts (cells responsible for tooth growth) in 60 guinea pigs. 
@@ -291,7 +291,7 @@ car::qqPlot(aovres, main = "Q-Q Plot of Residuals", pch = 19, col = 2, cex = 0.7
 ```{r}
 shapiro.test(aovres)
 ```
-The large $p$-value (much greater than 0.05) from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
+The $p$-value of 0.1076 from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
 
 Equal Variance:
 
@@ -311,6 +311,14 @@ levene_result_lawstat <- levene.test(ToothGrowth$len, factor(ToothGrowth$dose))
 print(levene_result_lawstat)
 ```
 The large $p$-value (much greater than 0.05) from the Levene significance test for equal variance validates the equal variance assumption.
+
+```{r}
+effects(anova_model_dose)
+```
+
+```{r}
+spreadLevelPlot(ToothGrowth$len, by=ToothGrowth$dose, main="Spread Level Plot")
+```
 
 (b)
 Fit and interpret a one-factor ANOVA model relating the response ***len*** to ***supp*** (Factor B).
@@ -358,6 +366,8 @@ The output of the summary indicates that the F-value for the one-factor ANOVA mo
 
 This p-value is greater than the conventional alpha level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis that the means of len are equal across the different levels of supp at the 5% significance level. In other words, based on the available data, we do not have sufficient statistical evidence to conclude that the supplement type (supp) has a significant impact on the length of odontoblasts (len) in guinea pigs.
 
+Although we do not have to validate assumptions because the test was insignificant, we will do so for completeness.
+
 Validate Assumptions:
 
 Normality:
@@ -380,7 +390,7 @@ car::qqPlot(aovres, main = "Q-Q Plot of Residuals", pch = 19, col = 2, cex = 0.7
 ```{r}
 shapiro.test(aovres)
 ```
-The large $p$-value (much greater than 0.05) from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
+The $p$-value of 0.1378 from the Shapiro-Wilk significance test for normality of $e_{ij}$ validates the normality assumption.
 
 Equal Variance:
 
@@ -400,6 +410,15 @@ levene_result_lawstat <- levene.test(ToothGrowth$len, factor(ToothGrowth$supp))
 print(levene_result_lawstat)
 ```
 The large $p$-value (much greater than 0.05) from the Levene significance test for equal variance validates the equal variance assumption.
+
+```{r}
+# Obtain the effects of the levels of CWP
+effects(anova_model_supp)
+```
+
+```{r}
+spreadLevelPlot(ToothGrowth$len, by=ToothGrowth$supp, main="Spread Level Plot")
+```
 
 (c)
 Fit and interpret an additive two-factor ANOVA model relating the response ***len*** to ***dose*** (Factor A) and ***supp*** (Factor B).
@@ -462,6 +481,13 @@ anova_model_interaction <- aov(len ~ as.factor(dose) * as.factor(supp), data = T
 summary(anova_model_interaction)
 ```
 
+```{r}
+library(phia)
+
+IM <- interactionMeans(anova_model_interaction)
+plot(IM)
+```
+
 Interpretation:
 
 The output of the summary indicates the presence of main effects for both dose and supp, as well as an interaction effect between dose and supp on the response variable len.
@@ -497,6 +523,12 @@ The interaction term between dose and supp is also significant with a p-value of
 
 **Q4. Open question. Not graded for credit.**
 Choose an application domain that interests you. Find/download an interesting data set in this domain which lends to analysis using one-factor or two-factor ANOVA analysis. Carry out a comprehensive analysis (testing assumptions, testing a suitable hypothesis, estimating effects etc.). Summarize as a report. You can share this on Discussion Board, and include on your Github page. 
+
+Overview:
+
+The National Basketball Association (NBA) is a men’s professional basketball league in North America. The league is composed of 30 teams (29 in the United States and 1 in Canada) and is one of the four major professional sports leagues in the United States and Canada. The NBA is an active member of USA Basketball (USAB), which is recognized by FIBA (also known as the International Basketball Federation) as the national governing body for basketball in the United States. The NBA is one of the four major professional sports leagues in the United States and Canada. NBA players are the world’s best paid athletes by average annual salary per player.
+
+In this analysis, we are interested in exploring the relationship between team pace and the division that a team belongs to. Team pace is a basketball statistic that estimates the number of possessions per 48 minutes by a team. A possession is defined as the time a team has the ball until it scores, misses a shot, commits a turnover, or commits a foul that is not a shooting foul. The division that a team belongs to is a categorical variable that indicates the division that a team belongs to. There are five divisions in the NBA: Atlantic, Central, Southeast, Northwest, Pacific, and Southwest.
 
 ```{r}
 library(dplyr)
